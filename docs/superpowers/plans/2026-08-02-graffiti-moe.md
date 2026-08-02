@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Max message length: **500** characters (including newlines)
+- Max message length: **1000** characters (including newlines)
 - Palette keys only: `default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`
 - Never persist or pass through user ANSI; server emits SGR only when `color=always`
 - Preserve internal spaces/newlines; expand tabs to 4 spaces; strip other controls
@@ -217,7 +217,7 @@ EOF
   - `Graffiti\MessageSanitizer::sanitizeBody(string $raw): string` — throws `InvalidArgumentException` if empty/too long after sanitize
   - `Graffiti\MessageSanitizer::normalizeColor(?string $color): string`
   - `Graffiti\MessageSanitizer::normalizeBold(mixed $bold): bool`
-  - Constant `MessageSanitizer::MAX_LENGTH = 500`
+  - Constant `MessageSanitizer::MAX_LENGTH = 1000`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -264,10 +264,10 @@ final class MessageSanitizerTest extends TestCase
         MessageSanitizer::sanitizeBody("   \n");
     }
 
-    public function test_rejects_over_500_chars(): void
+    public function test_rejects_over_1000_chars(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        MessageSanitizer::sanitizeBody(str_repeat('a', 501));
+        MessageSanitizer::sanitizeBody(str_repeat('a', 1001));
     }
 
     public function test_color_and_bold_normalization(): void
@@ -302,7 +302,7 @@ use InvalidArgumentException;
 
 final class MessageSanitizer
 {
-    public const MAX_LENGTH = 500;
+    public const MAX_LENGTH = 1000;
 
     /** @var list<string> */
     public const COLORS = ['default', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
@@ -318,7 +318,7 @@ final class MessageSanitizer
             throw new InvalidArgumentException('Message is empty');
         }
         if (mb_strlen($text, 'UTF-8') > self::MAX_LENGTH) {
-            throw new InvalidArgumentException('Message exceeds 500 characters');
+            throw new InvalidArgumentException('Message exceeds 1000 characters');
         }
         return $text;
     }
@@ -360,7 +360,7 @@ git add src/MessageSanitizer.php tests/MessageSanitizerTest.php
 git commit -m "$(cat <<'EOF'
 Add message sanitizer with ASCII art support.
 
-@new **Sanitizer** preserves newlines/spaces, expands tabs, strips controls, and enforces the 500-character limit.
+@new **Sanitizer** preserves newlines/spaces, expands tabs, strips controls, and enforces the 1000-character limit.
 EOF
 )"
 ```
@@ -1186,7 +1186,7 @@ final class AddHandlerTest extends TestCase
             [],
             ['HTTP_ACCEPT' => 'text/plain'],
             '',
-            ['body' => str_repeat('a', 501)],
+            ['body' => str_repeat('a', 1001)],
             '7.7.7.7',
         );
         $this->assertSame(400, $this->handler->handle($req)->status);

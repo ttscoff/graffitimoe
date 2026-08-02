@@ -8,7 +8,7 @@ A tiny public graffiti wall: anyone can spray a short message; anyone can fetch 
 - Browsers hitting `/` land on `/add` to submit a message
 - `/random` always returns a random plain-text message
 - Messages are anonymous (names may be typed into the message body if desired)
-- Bodies may be multi-line ASCII art / spaced text; line breaks and horizontal spacing are preserved within the 500-character limit
+- Bodies may be multi-line ASCII art / spaced text; line breaks and horizontal spacing are preserved within the 1000-character limit
 - Instant publish with soft moderation (admin can delete)
 - Output is safe for terminals: no user-controlled escape sequences or dangerous control characters
 - Optional controlled color via a server-owned palette (never raw user ANSI)
@@ -65,7 +65,7 @@ Admin ------> /admin -----------> list + delete
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | INTEGER PK | Auto-increment |
-| `body` | TEXT | Sanitized message (may include newlines/spaces), max 500 chars after trim |
+| `body` | TEXT | Sanitized message (may include newlines/spaces), max 1000 chars after trim |
 | `color` | TEXT | Palette key: `default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` |
 | `bold` | INTEGER | 0 or 1 |
 | `created_at` | TEXT | UTC ISO-8601 timestamp |
@@ -82,7 +82,7 @@ No author column. Attribution, if any, lives inside `body`.
 1. Normalize newlines: `\r\n` / `\r` → `\n`
 2. Trim leading/trailing whitespace (including leading/trailing newlines), but **preserve internal spaces, indentation, and newlines** so ASCII art survives
 3. Reject empty / whitespace-only
-4. Enforce max length 500 characters counting the full body including newlines (Unicode-aware where practical in PHP)
+4. Enforce max length 1000 characters counting the full body including newlines (Unicode-aware where practical in PHP)
 5. Strip dangerous ASCII control characters (U+0000–U+0008, U+000B–U+001F, U+007F) and escape introducers. **Allow** newline (`\n`) and ordinary spaces. Convert tabs to spaces (e.g. 1 tab → 4 spaces) so layout is predictable across terminals
 6. Accept `color` only from the allowlisted palette; unknown → `default`
 7. Accept `bold` only as boolean
@@ -132,7 +132,7 @@ No author column. Attribution, if any, lives inside `body`.
 ### Browser `/add`
 
 - Minimal page: brand, short explanation, multi-line textarea (not a single-line input), palette + bold controls, submit
-- Textarea hint that line breaks and spacing are kept (ASCII art welcome) within 500 characters
+- Textarea hint that line breaks and spacing are kept (ASCII art welcome) within 1000 characters
 - Use a monospace font in the compose field so art is editable WYSIWYG
 - Success: quiet confirmation on the same page
 - Errors: inline (too long, rate limited, etc.)
@@ -224,7 +224,7 @@ Responses:
 
 - Soft moderation (instant publish + admin delete)
 - Anonymous only; names optional inside message text
-- Max length 500 characters (includes newlines)
+- Max length 1000 characters (includes newlines)
 - Multi-line bodies with preserved spacing for ASCII art; tabs → spaces; other controls stripped
 - Smart `/` plus explicit `/random`
 - Dreamhost + PHP + SQLite
