@@ -63,6 +63,8 @@ try {
             'render_admin',
             'render_admin_login',
         ))->handle($request);
+    } elseif ($request->method === 'GET' && $request->path === '/recent') {
+        $response = (new \Graffiti\Handlers\RecentHandler($repo))->handle($request);
     } else {
         $response = $request->isBrowser()
             ? \Graffiti\Http\Response::html('<h1>Not found.</h1>', 404)

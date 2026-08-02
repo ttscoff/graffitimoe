@@ -33,6 +33,19 @@ final class Response
         return new self($status, ['Location' => $location], '');
     }
 
+    /** @param array<string, string> $extraHeaders */
+    public static function json(mixed $data, int $status = 200, array $extraHeaders = []): self
+    {
+        $headers = array_merge(
+            [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'Cache-Control' => 'no-store',
+            ],
+            $extraHeaders,
+        );
+        return new self($status, $headers, json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+    }
+
     public function emit(): void
     {
         http_response_code($this->status);
