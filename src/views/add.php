@@ -21,6 +21,7 @@ use Graffiti\Color;
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="/assets/favicon.png" type="image/png">
 </head>
 <body>
 <div class="page">

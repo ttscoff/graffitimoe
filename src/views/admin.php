@@ -11,6 +11,7 @@ declare(strict_types=1);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>graffiti.moe admin</title>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
 </head>
 <body>
 <main>

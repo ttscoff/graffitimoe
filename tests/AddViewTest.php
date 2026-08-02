@@ -32,6 +32,7 @@ final class AddViewTest extends TestCase
         ]);
 
         $this->assertStringContainsString('graffiti', $html);
+        $this->assertStringContainsString('/assets/favicon.png', $html);
         $this->assertStringContainsString('wall-empty', $html);
         $this->assertStringContainsString('name="website"', $html);
     }
