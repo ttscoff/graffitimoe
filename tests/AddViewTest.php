@@ -58,7 +58,19 @@ final class AddViewTest extends TestCase
         ]);
 
         $this->assertStringContainsString('compose-notice', $html);
+        $this->assertStringContainsString('cli-block', $html);
         $this->assertStringContainsString('No language filter. Posts are anonymous.', $html);
+
+        $composeNoticePos = strpos($html, 'compose-notice');
+        $recentSpraysPos = strpos($html, 'recent sprays');
+        $this->assertNotFalse($composeNoticePos);
+        $this->assertNotFalse($recentSpraysPos);
+        $this->assertLessThan($recentSpraysPos, $composeNoticePos);
+
+        $houseRulesPos = strpos($html, 'id="house-rules"');
+        $this->assertNotFalse($houseRulesPos);
+        $this->assertGreaterThan($recentSpraysPos, $houseRulesPos);
+
         $this->assertStringContainsString('house rules', $html);
         $this->assertStringContainsString('no automated language filtering', $html);
         $this->assertStringContainsString('takes no responsibility', $html);
@@ -66,7 +78,7 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('from your terminal', $html);
         $this->assertStringContainsString('brew tap ttscoff/thelab', $html);
         $this->assertStringContainsString('brew install graffiti', $html);
-        $this->assertStringContainsString('graffiti spraypaint', $html);
+        $this->assertStringContainsString("graffiti spraypaint 'your message'", $html);
         $this->assertStringContainsString('curl graffiti.moe', $html);
         $this->assertStringContainsString('color=always', $html);
         $this->assertStringNotContainsString('Want color?', $html);
