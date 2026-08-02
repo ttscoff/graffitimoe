@@ -83,24 +83,20 @@ use Graffiti\Color;
 
   <section class="wall">
     <h2 class="wall-title">recent sprays</h2>
-
-    <?php if ($recent === []): ?>
-      <p class="wall-empty">the wall is blank. be the first.</p>
-    <?php else: ?>
-      <div class="wall-grid">
-        <?php foreach ($recent as $message): ?>
-          <div class="terminal">
-            <div class="terminal-bar">
-              <span class="terminal-dot terminal-dot-red"></span>
-              <span class="terminal-dot terminal-dot-yellow"></span>
-              <span class="terminal-dot terminal-dot-green"></span>
-              <span class="terminal-title">msg #<?= e((string) $message['id']) ?></span>
-            </div>
-            <pre class="terminal-body <?= e(Color::cssClass($message['color'], $message['bold'])) ?>"><?= e($message['body']) ?></pre>
+    <p class="wall-empty"<?= $recent === [] ? '' : ' hidden' ?>>the wall is blank. be the first.</p>
+    <div class="wall-grid">
+      <?php foreach ($recent as $message): ?>
+        <div class="terminal" data-id="<?= e((string) $message['id']) ?>">
+          <div class="terminal-bar">
+            <span class="terminal-dot terminal-dot-red"></span>
+            <span class="terminal-dot terminal-dot-yellow"></span>
+            <span class="terminal-dot terminal-dot-green"></span>
+            <span class="terminal-title">msg #<?= e((string) $message['id']) ?></span>
           </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
+          <pre class="terminal-body <?= e(Color::cssClass($message['color'], $message['bold'])) ?>"><?= e($message['body']) ?></pre>
+        </div>
+      <?php endforeach; ?>
+    </div>
   </section>
 
   <section class="site-section" id="house-rules">
@@ -119,5 +115,6 @@ brew install graffiti</code></pre>
   </section>
 
 </div>
+<script src="/assets/wall.js" defer></script>
 </body>
 </html>

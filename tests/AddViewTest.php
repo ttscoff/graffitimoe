@@ -84,4 +84,30 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('color=always', $html);
         $this->assertStringNotContainsString('Want color?', $html);
     }
+
+    public function test_add_view_has_live_wall_hooks(): void
+    {
+        $html = render_add([
+            'recent' => [['id' => 9, 'body' => 'hi', 'color' => 'red', 'bold' => false, 'created_at' => 'x']],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+        $this->assertStringContainsString('data-id="9"', $html);
+        $this->assertStringContainsString('wall-grid', $html);
+        $this->assertStringContainsString('wall-empty', $html);
+        $this->assertStringContainsString('/assets/wall.js', $html);
+    }
+
+    public function test_add_view_empty_still_has_grid_and_empty(): void
+    {
+        $html = render_add([
+            'recent' => [],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+        $this->assertStringContainsString('wall-grid', $html);
+        $this->assertStringContainsString('wall-empty', $html);
+    }
 }
