@@ -32,6 +32,23 @@ final class RequestTest extends TestCase
         $this->assertFalse($request->wantsPlainText());
     }
 
+    public function test_browser_with_empty_or_wildcard_accept_wants_plain_text(): void
+    {
+        $emptyAccept = new Request('GET', '/', [], [
+            'HTTP_USER_AGENT' => 'Mozilla/5.0',
+        ], '', [], '1.2.3.4');
+
+        $wildcardAccept = new Request('GET', '/', [], [
+            'HTTP_USER_AGENT' => 'Mozilla/5.0',
+            'HTTP_ACCEPT' => '*/*',
+        ], '', [], '1.2.3.4');
+
+        $this->assertTrue($emptyAccept->isBrowser());
+        $this->assertTrue($emptyAccept->wantsPlainText());
+        $this->assertTrue($wildcardAccept->isBrowser());
+        $this->assertTrue($wildcardAccept->wantsPlainText());
+    }
+
     public function test_color_is_enabled_only_for_always_value(): void
     {
         $enabled = new Request('GET', '/random', ['color' => 'always'], [], '', [], '1.2.3.4');

@@ -68,6 +68,11 @@ final class Request
             return true;
         }
 
+        $accept = trim($this->accept());
+        if ($accept === '' || preg_match('/^\*\/\*(?:\s*;.*)?$/i', $accept) === 1) {
+            return true;
+        }
+
         return $this->mediaTypeQuality('text/plain') > $this->mediaTypeQuality('text/html');
     }
 
