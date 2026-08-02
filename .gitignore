@@ -11,3 +11,5 @@
 .phpunit.result.cache
 docs/
 .cursor
+*.code-workspace
+commit_message.txt
