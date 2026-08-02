@@ -1,0 +1,14 @@
+# When Dreamhost's web directory is the repo root (~/graffiti.moe),
+# funnel all traffic into public/ and block sensitive paths.
+
+RewriteEngine On
+
+# Never serve secrets, code, or tooling from the repo root.
+RewriteRule ^(?:config|data|src|vendor|tests|cli|brew|docs|scripts|composer\.(?:json|lock|phar)|phpunit\.xml|buildnotes\.md|README\.md)(?:/|$) - [F,L]
+RewriteRule ^(?:\.git|\.github|\.cursor|\.superpowers|\.worktrees)(?:/|$) - [F,L]
+
+# Already under /public/ — leave alone (avoids public/public/...).
+RewriteRule ^public(?:/|$) - [L]
+
+# Everything else is served from public/ (URLs stay clean: /add, /random).
+RewriteRule ^(.*)$ public/$1 [L]

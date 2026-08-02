@@ -51,13 +51,12 @@ Environment overrides:
 
 ### Homebrew
 
-A formula stub lives at [`brew/graffiti.rb.example`](brew/graffiti.rb.example). To publish a tap:
+```bash
+brew tap ttscoff/thelab
+brew install graffiti
+```
 
-1. Copy the stub into your tap as `Formula/graffiti.rb`.
-2. Update `url`, `sha256`, and `homepage` for your release tarball.
-3. `brew install your-tap/graffiti`
-
-The formula installs `cli/graffiti` and depends on `curl`.
+CLI source: [ttscoff/graffiti](https://github.com/ttscoff/graffiti). Formula: `ttscoff/thelab`. A mirror of the formula lives at [`brew/graffiti.rb.example`](brew/graffiti.rb.example).
 
 ## Local development
 

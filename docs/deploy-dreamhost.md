@@ -7,16 +7,30 @@ Short checklist for shared hosting with Hover DNS.
 - Rsync or SFTP the repo to the server (exclude `.git`, `vendor` if you run Composer on-server).
 - On the server: `composer install --no-dev --optimize-autoloader`.
 
-## 2. Point the domain at `public/`
+## 2. Web directory (two options)
 
-- In Dreamhost panel: set the domain **web directory** to the repo's `public/` folder (not the repo root).
-- Confirm `public/.htaccess` is present so Apache rewrites routes to `index.php`.
+**Preferred:** In the Dreamhost panel, set the domain **web directory** to `…/graffiti.moe/public`.
 
-## 3. Config and data outside the web root
+**If the web directory must stay at `~/graffiti.moe`:** keep the repo-root `.htaccess`. It rewrites all requests into `public/` (so URLs stay `/add`, `/random`) and returns 403 for `config/`, `data/`, `src/`, `vendor/`, etc. Confirm `mod_rewrite` is on (it is by default on Dreamhost).
 
-- Copy `config/config.example.php` to `config/config.php` (sibling of `public/`, not inside it).
+Either way, confirm `public/.htaccess` is present so app routes hit `index.php`.
+
+## 3. Config and data layout
+
+Layout under `~/graffiti.moe/`:
+
+```text
+~/graffiti.moe/
+  public/          # front controller + assets (web-facing)
+  config/          # config.php (secrets) — not served
+  data/            # graffiti.sqlite — not served
+  src/ vendor/ …   # app code — not served
+```
+
+`db_path` defaults to `__DIR__ . '/../data/graffiti.sqlite'`, i.e. **`~/graffiti.moe/data/`** — a sibling of `public/` and `config/`, not inside `public/`.
+
+- Copy `config/config.example.php` to `config/config.php`.
 - Set production values: `admin_password`, `ip_hash_secret`, `base_url`, rate limits.
-- Ensure `db_path` in config points to a SQLite file **outside** `public/` (default: `data/graffiti.sqlite`).
 
 ```bash
 mkdir -p data
@@ -60,4 +74,9 @@ Browser checks:
 - `https://graffiti.moe/` → redirects to `/add` (form + recent 10).
 - `https://graffiti.moe/admin` → login, list, delete.
 
-Confirm `config/` and `data/` are not reachable via HTTP (404 or forbidden).
+Confirm `config/` and `data/` are not reachable via HTTP (403/404), e.g.:
+
+```bash
+curl -sI https://graffiti.moe/config/config.php | head -1
+curl -sI https://graffiti.moe/data/ | head -1
+```

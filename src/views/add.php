@@ -102,6 +102,7 @@ use Graffiti\Color;
 
   <footer class="footer">
     <p><code>curl graffiti.moe</code> &mdash; one random message, straight to your terminal.</p>
+    <p>Want color? <code>curl 'graffiti.moe?color=always'</code> &mdash; uses the spray&rsquo;s palette (safe server-side colors only).</p>
   </footer>
 
 </div>

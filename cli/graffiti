@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+VERSION="0.1.0"
 BASE="${GRAFFITI_URL:-https://graffiti.moe}"
 BASE="${BASE%/}"
 COLOR_MODE="${GRAFFITI_COLOR:-auto}"
@@ -13,6 +14,14 @@ Usage:
   graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
   graffiti spraypaint [--color NAME] [--bold] < file.txt
   graffiti help
+  graffiti --version
+
+Fortune-style client for https://graffiti.moe
+
+Environment:
+  GRAFFITI_URL     API base (default https://graffiti.moe)
+  GRAFFITI_COLOR   always|never|auto (default auto)
+  NO_COLOR         when set (non-empty), disable color in auto mode
 EOF
 }
 
@@ -46,6 +55,16 @@ cmd_spraypaint() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            -h|--help|help)
+                cat <<'EOF'
+Usage:
+  graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
+  graffiti spraypaint [--color NAME] [--bold] < file.txt
+
+Colors: default, red, green, yellow, blue, magenta, cyan
+EOF
+                exit 0
+                ;;
             --color)
                 if [[ $# -lt 2 ]]; then
                     echo "Missing value for --color." >&2
@@ -87,6 +106,10 @@ cmd_spraypaint() {
     if (( has_message )); then
         printf '%s' "$message"
     else
+        if [[ -t 0 ]]; then
+            echo "spraypaint: pass a message argument or pipe/redirect stdin." >&2
+            exit 2
+        fi
         cat
     fi | curl -fsS -X POST "$BASE/add" \
         -H 'Accept: text/plain' \
@@ -108,6 +131,10 @@ while [[ $# -gt 0 ]]; do
             fi
             COLOR_MODE="$2"
             shift 2
+            ;;
+        -V|--version|version)
+            echo "graffiti ${VERSION}"
+            exit 0
             ;;
         -h|--help|help)
             usage
