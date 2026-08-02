@@ -3,6 +3,8 @@
 /config/config.php
 /data/*.sqlite
 /data/*.sqlite-journal
+/data/*.sqlite-wal
+/data/*.sqlite-shm
 /.phpunit.cache/
 .DS_Store
 .superpowers/

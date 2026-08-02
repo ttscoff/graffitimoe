@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 /** @var string|null $error */
+/** @var string $csrfToken */
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,6 +19,7 @@ declare(strict_types=1);
     <p role="alert"><?= e($error) ?></p>
   <?php endif; ?>
   <form method="post" action="/admin">
+    <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
     <label for="password">Password</label>
     <input id="password" name="password" type="password" required>
     <button type="submit">Log in</button>

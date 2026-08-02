@@ -41,13 +41,15 @@ final class AdminHandlerTest extends TestCase
 
     public function test_wrong_password_renders_login_without_authorizing_session(): void
     {
+        $csrfToken = $this->session->csrfToken();
+
         $response = $this->handler->handle(new Request(
             'POST',
             '/admin',
             [],
             ['HTTP_ACCEPT' => 'text/html'],
             '',
-            ['password' => 'wrong'],
+            ['password' => 'wrong', 'csrf_token' => $csrfToken],
             '1.1.1.1',
         ));
 
@@ -56,9 +58,27 @@ final class AdminHandlerTest extends TestCase
         $this->assertStringContainsString('Invalid password.', $response->body);
     }
 
+    public function test_login_post_without_valid_csrf_token_is_rejected(): void
+    {
+        $response = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            ['password' => 'secret-password', 'csrf_token' => 'bogus-token'],
+            '1.1.1.1',
+        ));
+
+        $this->assertSame(403, $response->status);
+        $this->assertFalse($this->session->isAdmin());
+        $this->assertStringContainsString('Invalid request.', $response->body);
+    }
+
     public function test_correct_password_authorizes_session_and_can_delete_message(): void
     {
         $id = $this->repo->create('delete me', 'red', false, 'ip-hash');
+        $csrfToken = $this->session->csrfToken();
 
         $login = $this->handler->handle(new Request(
             'POST',
@@ -66,7 +86,7 @@ final class AdminHandlerTest extends TestCase
             [],
             ['HTTP_ACCEPT' => 'text/html'],
             '',
-            ['password' => 'secret-password'],
+            ['password' => 'secret-password', 'csrf_token' => $csrfToken],
             '1.1.1.1',
         ));
 
@@ -74,19 +94,40 @@ final class AdminHandlerTest extends TestCase
         $this->assertSame('/admin', $login->headers['Location']);
         $this->assertTrue($this->session->isAdmin());
 
+        $postLoginCsrfToken = $this->session->csrfToken();
+
         $delete = $this->handler->handle(new Request(
             'POST',
             '/admin',
             [],
             ['HTTP_ACCEPT' => 'text/html'],
             '',
-            ['id' => (string) $id],
+            ['id' => (string) $id, 'csrf_token' => $postLoginCsrfToken],
             '1.1.1.1',
         ));
 
         $this->assertSame(302, $delete->status);
         $this->assertSame('/admin', $delete->headers['Location']);
         $this->assertSame([], $this->repo->allNewestFirst());
+    }
+
+    public function test_delete_post_without_valid_csrf_token_is_rejected(): void
+    {
+        $id = $this->repo->create('keep me', 'red', false, 'ip-hash');
+        $this->session->set('admin', 1);
+
+        $response = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            ['id' => (string) $id, 'csrf_token' => 'bogus-token'],
+            '1.1.1.1',
+        ));
+
+        $this->assertSame(403, $response->status);
+        $this->assertCount(1, $this->repo->allNewestFirst());
     }
 
     public function test_unauthorized_plain_request_is_forbidden(): void

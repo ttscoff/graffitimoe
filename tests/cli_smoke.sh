@@ -4,8 +4,17 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 port="${PORT:-8080}"
-config="$root/config/config.php"
-config_backup="$(mktemp)"
+
+base_config="$root/config/config.php"
+if [[ ! -f "$base_config" ]]; then
+    base_config="$root/config/config.example.php"
+fi
+if [[ ! -f "$base_config" ]]; then
+    echo "Missing config/config.php; copy config/config.example.php first." >&2
+    exit 1
+fi
+
+tmp_config="$(mktemp)"
 db_dir="$(mktemp -d)"
 server_log="$(mktemp)"
 pid=""
@@ -15,20 +24,15 @@ cleanup() {
         kill "$pid" 2>/dev/null || true
         wait "$pid" 2>/dev/null || true
     fi
-    cp "$config_backup" "$config"
-    rm -rf "$db_dir" "$config_backup" "$server_log"
+    rm -rf "$db_dir" "$tmp_config" "$server_log"
 }
 
 trap cleanup EXIT
 
-if [[ ! -f "$config" ]]; then
-    echo "Missing config/config.php; copy config/config.example.php first." >&2
-    exit 1
-fi
+php -r '$config = require $argv[1]; $config["db_path"] = $argv[2]; file_put_contents($argv[3], "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");' \
+    "$base_config" "$db_dir/graffiti.sqlite" "$tmp_config"
 
-cp "$config" "$config_backup"
-php -r '$config = require $argv[1]; $config["db_path"] = $argv[2]; file_put_contents($argv[1], "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");' \
-    "$config" "$db_dir/graffiti.sqlite"
+export GRAFFITI_CONFIG="$tmp_config"
 
 cd "$root"
 php -S "127.0.0.1:$port" -t public public/router.php >"$server_log" 2>&1 &

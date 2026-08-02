@@ -16,7 +16,21 @@ try {
      *     session_name: string
      * } $config
      */
-    $config = require dirname(__DIR__) . '/config/config.php';
+    $configPath = getenv('GRAFFITI_CONFIG');
+    if ($configPath === false || $configPath === '') {
+        $configPath = dirname(__DIR__) . '/config/config.php';
+    }
+    $config = require $configPath;
+
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ($_SERVER['REQUEST_SCHEME'] ?? '') === 'https'
+        || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => $isHttps,
+    ]);
 
     session_name($config['session_name']);
     session_start();

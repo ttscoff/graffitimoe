@@ -11,6 +11,12 @@ interface SessionBag
     public function set(string $key, mixed $value): void;
 
     public function isAdmin(): bool;
+
+    /** Returns the per-session CSRF token, generating one on first use. */
+    public function csrfToken(): string;
+
+    /** Rotates the session identity (and CSRF token) after a privilege change, e.g. login. */
+    public function regenerate(): void;
 }
 
 final class ArraySession implements SessionBag
@@ -32,6 +38,22 @@ final class ArraySession implements SessionBag
     {
         return $this->get('admin') === 1;
     }
+
+    public function csrfToken(): string
+    {
+        $token = $this->get('csrf_token');
+        if (!is_string($token) || $token === '') {
+            $token = bin2hex(random_bytes(32));
+            $this->set('csrf_token', $token);
+        }
+
+        return $token;
+    }
+
+    public function regenerate(): void
+    {
+        unset($this->values['csrf_token']);
+    }
 }
 
 final class PhpSession implements SessionBag
@@ -49,5 +71,22 @@ final class PhpSession implements SessionBag
     public function isAdmin(): bool
     {
         return $this->get('admin') === 1;
+    }
+
+    public function csrfToken(): string
+    {
+        $token = $this->get('csrf_token');
+        if (!is_string($token) || $token === '') {
+            $token = bin2hex(random_bytes(32));
+            $this->set('csrf_token', $token);
+        }
+
+        return $token;
+    }
+
+    public function regenerate(): void
+    {
+        session_regenerate_id(true);
+        unset($_SESSION['csrf_token']);
     }
 }
