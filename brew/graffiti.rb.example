@@ -1,0 +1,17 @@
+class Graffiti < Formula
+  desc "Fortune-style client for graffiti.moe"
+  homepage "https://graffiti.moe"
+  url "https://github.com/EXAMPLE/graffiti-moe/archive/refs/tags/v0.1.0.tar.gz"
+  sha256 "REPLACE"
+  license "MIT"
+
+  depends_on "curl"
+
+  def install
+    bin.install "cli/graffiti"
+  end
+
+  test do
+    assert_match "Usage", shell_output("#{bin}/graffiti help")
+  end
+end

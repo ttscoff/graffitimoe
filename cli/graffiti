@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BASE="${GRAFFITI_URL:-https://graffiti.moe}"
+BASE="${BASE%/}"
+COLOR_MODE="${GRAFFITI_COLOR:-auto}"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  graffiti [--color=always|never|auto]     Print a random graffiti message
+  graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
+  graffiti spraypaint [--color NAME] [--bold] < file.txt
+  graffiti help
+EOF
+}
+
+want_color() {
+    case "$COLOR_MODE" in
+        always) return 0 ;;
+        never) return 1 ;;
+        auto)
+            [[ -z "${NO_COLOR:-}" && -t 1 ]]
+            ;;
+        *)
+            echo "Invalid color mode: $COLOR_MODE" >&2
+            exit 2
+            ;;
+    esac
+}
+
+cmd_random() {
+    local url="$BASE/random"
+    if want_color; then
+        url+="?color=always"
+    fi
+    curl -fsS "$url"
+}
+
+cmd_spraypaint() {
+    local color=default
+    local bold=0
+    local message=""
+    local has_message=0
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --color)
+                if [[ $# -lt 2 ]]; then
+                    echo "Missing value for --color." >&2
+                    exit 2
+                fi
+                color="$2"
+                shift 2
+                ;;
+            --bold)
+                bold=1
+                shift
+                ;;
+            --)
+                shift
+                break
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 2
+                ;;
+            *)
+                message="$1"
+                has_message=1
+                shift
+                break
+                ;;
+        esac
+    done
+
+    if [[ $# -gt 0 ]]; then
+        if (( has_message )); then
+            message+=" $*"
+        else
+            message="$*"
+            has_message=1
+        fi
+    fi
+
+    if (( has_message )); then
+        printf '%s' "$message"
+    else
+        cat
+    fi | curl -fsS -X POST "$BASE/add" \
+        -H 'Accept: text/plain' \
+        --data-urlencode "body@-" \
+        --data-urlencode "color=${color}" \
+        --data-urlencode "bold=${bold}"
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --color=*)
+            COLOR_MODE="${1#--color=}"
+            shift
+            ;;
+        --color)
+            if [[ $# -lt 2 ]]; then
+                echo "Missing value for --color." >&2
+                exit 2
+            fi
+            COLOR_MODE="$2"
+            shift 2
+            ;;
+        -h|--help|help)
+            usage
+            exit 0
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+case "${1:-}" in
+    "")
+        cmd_random
+        ;;
+    spraypaint)
+        shift
+        cmd_spraypaint "$@"
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
