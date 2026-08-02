@@ -44,10 +44,10 @@ use Graffiti\Color;
       name="body"
       class="mono"
       rows="6"
-      maxlength="1000"
       required
       placeholder="spray something... multi-line + ascii art welcome"
     ></textarea>
+    <p id="char-count" class="char-count" aria-live="polite">0 / 1000</p>
 
     <div class="controls">
       <fieldset class="palette">
@@ -115,6 +115,7 @@ brew install graffiti</code></pre>
   </section>
 
 </div>
+<script src="/assets/compose.js" defer></script>
 <script src="/assets/wall.js" defer></script>
 </body>
 </html>

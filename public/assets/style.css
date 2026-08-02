@@ -175,6 +175,19 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(69, 224, 255, 0.15);
 }
 
+.char-count {
+  margin: 0.4rem 0 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.char-count.is-over {
+  color: var(--term-red);
+  font-weight: 600;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -255,6 +268,14 @@ textarea:focus {
 
 .spray-btn:active {
   transform: translateY(0);
+}
+
+.spray-btn:disabled,
+.spray-btn:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Honeypot: present in the DOM for bots, invisible + unreachable for humans. */

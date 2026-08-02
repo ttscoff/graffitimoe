@@ -110,4 +110,19 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('wall-grid', $html);
         $this->assertStringContainsString('wall-empty', $html);
     }
+
+    public function test_add_view_has_char_counter_hooks(): void
+    {
+        $html = render_add([
+            'recent' => [],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+
+        $this->assertStringContainsString('id="char-count"', $html);
+        $this->assertStringContainsString('aria-live="polite"', $html);
+        $this->assertStringContainsString('/assets/compose.js', $html);
+        $this->assertStringNotContainsString('maxlength="1000"', $html);
+    }
 }
