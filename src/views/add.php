@@ -78,6 +78,8 @@ use Graffiti\Color;
     </div>
   </form>
 
+  <p class="compose-notice">No language filter. Posts are anonymous. Don&rsquo;t spray hate or porn &mdash; it gets wiped.</p>
+
   <section class="wall">
     <h2 class="wall-title">recent sprays</h2>
 
@@ -100,10 +102,20 @@ use Graffiti\Color;
     <?php endif; ?>
   </section>
 
-  <footer class="footer">
-    <p><code>curl graffiti.moe</code> &mdash; one random message, straight to your terminal.</p>
-    <p>Want color? <code>curl 'graffiti.moe?color=always'</code> &mdash; uses the spray&rsquo;s palette (safe server-side colors only).</p>
-  </footer>
+  <section class="site-section" id="house-rules">
+    <h2 class="wall-title">house rules</h2>
+    <p class="site-section-body">There&rsquo;s no automated language filtering. Contributions are anonymous. The developer takes no responsibility for what others write. Hate speech and pornographic content will be removed by the admin as quickly as possible.</p>
+  </section>
+
+  <section class="site-section" id="cli">
+    <h2 class="wall-title">from your terminal</h2>
+    <p class="site-section-body">Install the CLI with Homebrew:</p>
+    <pre class="cli-block"><code>brew tap ttscoff/thelab
+brew install graffiti</code></pre>
+    <p class="site-section-body">Then <code>graffiti</code> for a random spray, or <code>graffiti spraypaint</code> to post.</p>
+    <p class="site-section-body">Read with color: <code>graffiti --color=always</code> (or <code>never</code> / <code>auto</code>). Spray with palette options: <code>graffiti spraypaint --color cyan --bold 'your message'</code> &mdash; colors match the form (<code>default</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>).</p>
+    <p class="site-section-body">No Homebrew? <code>curl graffiti.moe</code> (add <code>?color=always</code> for color).</p>
+  </section>
 
 </div>
 </body>

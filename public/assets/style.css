@@ -380,21 +380,54 @@ textarea:focus {
   font-weight: 700;
 }
 
-/* ---- Footer ---- */
+/* ---- Compose notice ---- */
 
-.footer {
-  margin-top: 3rem;
+.compose-notice {
+  margin: 1rem 0 0;
   text-align: center;
   color: var(--text-dim);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
-.footer p {
-  margin: 0.4rem 0;
+/* ---- Site sections (house rules / CLI) ---- */
+
+.site-section {
+  margin-top: 2.5rem;
+  text-align: center;
 }
 
-.footer code {
+.site-section-body {
+  margin: 0.5rem auto 0;
+  max-width: 36rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.site-section code {
   color: var(--electric-cyan);
+}
+
+.cli-block {
+  margin: 0.85rem auto 0;
+  max-width: 28rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--electric-cyan);
+  overflow-x: auto;
+}
+
+.cli-block code {
+  color: inherit;
+  background: none;
+  padding: 0;
 }
 
 @media (max-width: 480px) {
