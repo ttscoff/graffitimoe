@@ -47,4 +47,28 @@ final class AddViewTest extends TestCase
 
         $this->assertStringContainsString('term-cyan term-bold', $html);
     }
+
+    public function test_add_view_includes_disclaimer_and_cli_sections(): void
+    {
+        $html = render_add([
+            'recent' => [],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+
+        $this->assertStringContainsString('compose-notice', $html);
+        $this->assertStringContainsString('No language filter. Posts are anonymous.', $html);
+        $this->assertStringContainsString('house rules', $html);
+        $this->assertStringContainsString('no automated language filtering', $html);
+        $this->assertStringContainsString('takes no responsibility', $html);
+        $this->assertStringContainsString('Hate speech and pornographic content', $html);
+        $this->assertStringContainsString('from your terminal', $html);
+        $this->assertStringContainsString('brew tap ttscoff/thelab', $html);
+        $this->assertStringContainsString('brew install graffiti', $html);
+        $this->assertStringContainsString('graffiti spraypaint', $html);
+        $this->assertStringContainsString('curl graffiti.moe', $html);
+        $this->assertStringContainsString('color=always', $html);
+        $this->assertStringNotContainsString('Want color?', $html);
+    }
 }
