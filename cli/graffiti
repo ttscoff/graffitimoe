@@ -2,12 +2,61 @@
 
 set -euo pipefail
 
-VERSION="0.1.1"
+VERSION="0.1.2"
 BASE="${GRAFFITI_URL:-https://graffiti.moe}"
 BASE="${BASE%/}"
 COLOR_MODE="${GRAFFITI_COLOR:-auto}"
 
+print_logo() {
+    local art
+    art=$(cat <<'EOF'
+                               
+     %%%    @@@@@@@            
+            @@@@@@@            
+  ***   ###    @@@@            
+     ===    @@@@@@@            
+         @@@@@@@@@@@@@         
+        @@@@@@@@@@@@@@@        
+        @          @@@@        
+        @          @@@@        
+        @          @@@@        
+        @          @@@@        
+        @          @@@@        
+        @          @@@@        
+        @@@@@@@@@@@@@@@        
+        @@@@@@@@@@@@@@@        
+         @@@@@@@@@@@@@         
+                               
+EOF
+)
+    if ! want_color; then
+        printf '%s\n' "$art"
+        return
+    fi
+
+    local red=$'\033[31m' cyan=$'\033[36m' magenta=$'\033[35m'
+    local yellow=$'\033[33m' white=$'\033[37m' reset=$'\033[0m'
+    local line i c out
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        out=""
+        for (( i = 0; i < ${#line}; i++ )); do
+            c="${line:i:1}"
+            case "$c" in
+                %) out+="${red}%${reset}" ;;
+                \*) out+="${cyan}*${reset}" ;;
+                \#) out+="${magenta}#${reset}" ;;
+                =) out+="${yellow}=${reset}" ;;
+                @) out+="${white}@${reset}" ;;
+                *) out+="$c" ;;
+            esac
+        done
+        printf '%s\n' "$out"
+    done <<<"$art"
+}
+
 usage() {
+    print_logo
+    printf '\n'
     cat <<'EOF'
 Usage:
   graffiti [--color=always|never|auto]     Print a random graffiti message
@@ -155,6 +204,8 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -V|--version|version)
+            print_logo
+            printf '\n'
             echo "graffiti ${VERSION}"
             exit 0
             ;;
