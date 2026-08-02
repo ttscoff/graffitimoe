@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 BASE="${GRAFFITI_URL:-https://graffiti.moe}"
 BASE="${BASE%/}"
 COLOR_MODE="${GRAFFITI_COLOR:-auto}"
@@ -13,6 +13,7 @@ Usage:
   graffiti [--color=always|never|auto]     Print a random graffiti message
   graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
   graffiti spraypaint [--color NAME] [--bold] < file.txt
+  graffiti spraypaint                      Open /add in your browser (no args)
   graffiti help
   graffiti --version
 
@@ -39,6 +40,25 @@ want_color() {
     esac
 }
 
+# Open a URL in the default browser (macOS / Linux / common Windows environments).
+open_url() {
+    local url="$1"
+    if command -v open >/dev/null 2>&1; then
+        open "$url"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+    elif command -v wslview >/dev/null 2>&1; then
+        wslview "$url"
+    elif command -v cygstart >/dev/null 2>&1; then
+        cygstart "$url"
+    elif [[ -n "${BROWSER:-}" ]] && command -v "$BROWSER" >/dev/null 2>&1; then
+        "$BROWSER" "$url" >/dev/null 2>&1 &
+    else
+        echo "Open this URL in your browser: $url" >&2
+        return 1
+    fi
+}
+
 cmd_random() {
     local url="$BASE/random"
     if want_color; then
@@ -60,6 +80,7 @@ cmd_spraypaint() {
 Usage:
   graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
   graffiti spraypaint [--color NAME] [--bold] < file.txt
+  graffiti spraypaint                      Open /add in your browser
 
 Colors: default, red, green, yellow, blue, magenta, cyan
 EOF
@@ -103,13 +124,14 @@ EOF
         fi
     fi
 
+    if (( ! has_message )) && [[ -t 0 ]]; then
+        open_url "${BASE}/add"
+        return
+    fi
+
     if (( has_message )); then
         printf '%s' "$message"
     else
-        if [[ -t 0 ]]; then
-            echo "spraypaint: pass a message argument or pipe/redirect stdin." >&2
-            exit 2
-        fi
         cat
     fi | curl -fsS -X POST "$BASE/add" \
         -H 'Accept: text/plain' \

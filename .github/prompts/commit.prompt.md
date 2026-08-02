@@ -1,0 +1,2 @@
+- Add and delete new and missing files from git staging
+- Run `git commit -a -F commit_message.txt`

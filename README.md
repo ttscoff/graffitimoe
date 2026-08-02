@@ -40,9 +40,14 @@ The repo includes a bash wrapper around `curl`:
 ```bash
 ./cli/graffiti              # random message (color when stdout is a TTY)
 ./cli/graffiti --color=never
+./cli/graffiti --color=always
+./cli/graffiti spraypaint   # open /add in your default browser
 ./cli/graffiti spraypaint --color magenta --bold 'hello world'
 echo 'ascii art' | ./cli/graffiti spraypaint
 ```
+
+- **`--color` (read):** `always`, `never`, or `auto` (default). Auto colors when stdout is a TTY unless `NO_COLOR` is set. Requests `?color=always` from the server when coloring.
+- **`--color` / `--bold` (spraypaint):** set the message palette (`default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`) and optional bold — same options as the web form.
 
 Environment overrides:
 

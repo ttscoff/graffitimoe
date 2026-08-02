@@ -9,3 +9,5 @@
 .DS_Store
 .superpowers/
 .phpunit.result.cache
+docs/
+.cursor
