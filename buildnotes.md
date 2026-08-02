@@ -14,7 +14,7 @@ PHP/SQLite graffiti wall: browsers compose on `/add`, terminals curl a random me
 - **`data/`** — SQLite DB outside the web root (gitignored `*.sqlite*`)
 - **`cli/graffiti`** — Homebrew-friendly curl wrapper (`spraypaint` subcommand)
 - **`brew/graffiti.rb.example`** — Formula stub for your tap
-- **`tests/`** — PHPUnit + `cli_smoke.sh`
+- **`tests/`** — PHPUnit + `cli_smoke.sh`, `cli_logo.sh`
 - **`scripts/smoke.sh`** — Local HTTP smoke against a temp server
 - **`docs/`** — Specs, plans, `deploy-dreamhost.md`
 - **`composer.json`** — PHP >= 8.1, PHPUnit for tests
@@ -78,13 +78,20 @@ CLI smoke against a temporary local server.
 
 @run(./tests/cli_smoke.sh)
 
+## Test CLI Logo
+
+CLI logo smoke (help/version output, no server required).
+
+@run(./tests/cli_logo.sh)
+
 ## Test All
 
-Run PHPUnit, then both smoke scripts.
+Run PHPUnit, then all smoke scripts.
 
 @include(Test PHPUnit)
 @include(Test Smoke)
 @include(Test CLI Smoke)
+@include(Test CLI Logo)
 
 ## Deploy Rsync
 

@@ -81,6 +81,7 @@ Smoke tests (start nothing yourself; scripts spin up a temporary server):
 ```bash
 ./scripts/smoke.sh
 ./tests/cli_smoke.sh
+./tests/cli_logo.sh
 ./vendor/bin/phpunit
 ```
 
