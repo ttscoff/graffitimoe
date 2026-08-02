@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="0.1.2"
+VERSION="0.1.4"
 BASE="${GRAFFITI_URL:-https://graffiti.moe}"
 BASE="${BASE%/}"
 COLOR_MODE="${GRAFFITI_COLOR:-auto}"

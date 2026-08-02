@@ -212,6 +212,210 @@ brew install graffiti
 graffiti --version
 ```
 
+## Deploy CLI (version, notes)
+
+Release a new CLI version: sync `cli/graffiti` → `~/Sites/dev/graffiti`, bump `VERSION`, tag + GitHub release asset, wait until the public download works, then bump `~/Desktop/Code/homebrew-thelab/Formula/graffiti.rb` and push the tap.
+
+Optional args after `--`: `version` (default: patch bump), `notes` (release body).
+
+```run
+#!/bin/bash
+set -euo pipefail
+
+CLI_SRC="$PWD/cli/graffiti"
+CLI_REPO="$HOME/Sites/dev/graffiti"
+TAP_REPO="$HOME/Desktop/Code/homebrew-thelab"
+FORMULA="$TAP_REPO/Formula/graffiti.rb"
+EXAMPLE="$PWD/brew/graffiti.rb.example"
+
+if [[ ! -f "$CLI_SRC" ]]; then
+  echo "Missing $CLI_SRC" >&2
+  exit 1
+fi
+if [[ ! -d "$CLI_REPO/.git" || ! -d "$TAP_REPO/.git" ]]; then
+  echo "Expected git checkouts at $CLI_REPO and $TAP_REPO" >&2
+  exit 1
+fi
+
+CURRENT="$(grep -E '^VERSION=' "$CLI_SRC" | head -1 | cut -d= -f2 | tr -d '"')"
+if [[ ! "$CURRENT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Could not parse VERSION from $CLI_SRC (got: $CURRENT)" >&2
+  exit 1
+fi
+
+# howzit inlines $1/$2 when passed after --; otherwise leave empty (avoid set -u)
+set +u
+VERSION="$1"
+NOTES="$2"
+set -u
+if [[ -z "$VERSION" ]]; then
+  IFS=. read -r MA MI PA <<<"$CURRENT"
+  VERSION="$MA.$MI.$((PA + 1))"
+fi
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Invalid version: $VERSION" >&2
+  exit 1
+fi
+TAG="v$VERSION"
+if [[ -z "$NOTES" ]]; then
+  NOTES="CLI release $TAG"
+fi
+ASSET_NAME="graffiti-$VERSION.tar.gz"
+ASSET_URL="https://github.com/ttscoff/graffiti/releases/download/$TAG/$ASSET_NAME"
+
+echo "Deploying graffiti CLI $CURRENT -> $VERSION"
+
+# Bump VERSION in app-repo CLI, then sync into the CLI repo
+if grep -qE '^VERSION=' "$CLI_SRC"; then
+  sed -i.bak -E "s/^VERSION=.*/VERSION=\"$VERSION\"/" "$CLI_SRC"
+  rm -f "$CLI_SRC.bak"
+else
+  echo "No VERSION= line in $CLI_SRC" >&2
+  exit 1
+fi
+cp "$CLI_SRC" "$CLI_REPO/graffiti"
+chmod +x "$CLI_REPO/graffiti"
+
+cd "$CLI_REPO"
+git add graffiti
+if ! git diff --cached --quiet; then
+  git commit -m "$(cat <<EOF
+Release $TAG.
+
+@changed **CLI** version to $VERSION
+EOF
+)"
+else
+  echo "CLI repo already up to date for $VERSION"
+fi
+git push origin HEAD
+
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+  echo "Tag $TAG already exists locally; skipping retag"
+else
+  git tag -a "$TAG" -m "$TAG"
+fi
+git push origin "$TAG" || echo "Note: tag $TAG may already exist on remote"
+
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
+mkdir -p "$STAGE/graffiti-$VERSION"
+cp "$CLI_REPO/graffiti" "$CLI_REPO/LICENSE" "$CLI_REPO/README.md" \
+  "$STAGE/graffiti-$VERSION/"
+chmod +x "$STAGE/graffiti-$VERSION/graffiti"
+tar -C "$STAGE" -czf "/tmp/$ASSET_NAME" "graffiti-$VERSION"
+SHA="$(shasum -a 256 "/tmp/$ASSET_NAME" | cut -d' ' -f1)"
+echo "SHA256=$SHA"
+
+# Recreate release if needed so the asset is attached at create time
+if hub api "repos/ttscoff/graffiti/releases/tags/$TAG" >/dev/null 2>&1; then
+  REL_ID="$(hub api "repos/ttscoff/graffiti/releases/tags/$TAG" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')"
+  hub api -X DELETE "repos/ttscoff/graffiti/releases/$REL_ID" >/dev/null
+  sleep 1
+fi
+hub release create -m "$TAG
+
+$NOTES" -a "/tmp/$ASSET_NAME" "$TAG"
+
+echo "Waiting for public asset at $ASSET_URL ..."
+ok=0
+for i in $(seq 1 30); do
+  if curl -fsSL -o "/tmp/pub-$ASSET_NAME" -L "$ASSET_URL"; then
+    PUB_SHA="$(shasum -a 256 "/tmp/pub-$ASSET_NAME" | cut -d' ' -f1)"
+    if [[ "$PUB_SHA" == "$SHA" ]]; then
+      ok=1
+      break
+    fi
+    echo "Attempt $i: sha mismatch (got $PUB_SHA)" >&2
+  else
+    echo "Attempt $i: download not ready" >&2
+  fi
+  sleep 2
+done
+if [[ "$ok" -ne 1 ]]; then
+  echo "Timed out waiting for public release asset $ASSET_URL" >&2
+  exit 1
+fi
+echo "Public asset ready ($SHA)"
+
+# Update Homebrew formula + in-repo example
+cat >"$FORMULA" <<EOF
+# Homebrew formula for graffiti
+#   brew tap ttscoff/thelab
+#   brew install graffiti
+
+class Graffiti < Formula
+  desc "Fortune-style client for graffiti.moe"
+  homepage "https://graffiti.moe"
+  url "$ASSET_URL"
+  sha256 "$SHA"
+  license "MIT"
+  version "$VERSION"
+
+  depends_on "curl"
+
+  def install
+    bin.install "graffiti"
+  end
+
+  test do
+    assert_match "Usage", shell_output("#{bin}/graffiti help")
+    assert_match "$VERSION", shell_output("#{bin}/graffiti --version")
+  end
+end
+EOF
+
+cat >"$EXAMPLE" <<EOF
+# Installed from the ttscoff/thelab tap (not this file).
+# Source: https://github.com/ttscoff/homebrew-thelab/blob/main/Formula/graffiti.rb
+# CLI repo: https://github.com/ttscoff/graffiti
+#
+#   brew tap ttscoff/thelab
+#   brew install graffiti
+
+class Graffiti < Formula
+  desc "Fortune-style client for graffiti.moe"
+  homepage "https://graffiti.moe"
+  url "$ASSET_URL"
+  sha256 "$SHA"
+  license "MIT"
+  version "$VERSION"
+
+  depends_on "curl"
+
+  def install
+    bin.install "graffiti"
+  end
+
+  test do
+    assert_match "Usage", shell_output("#{bin}/graffiti help")
+    assert_match "$VERSION", shell_output("#{bin}/graffiti --version")
+  end
+end
+EOF
+
+cd "$TAP_REPO"
+git add Formula/graffiti.rb
+if ! git diff --cached --quiet; then
+  git commit -m "$(cat <<EOF
+Bump graffiti formula to $VERSION.
+
+@changed **graffiti** formula to $TAG release asset
+EOF
+)"
+  git push origin HEAD
+else
+  echo "Formula already at $VERSION"
+fi
+
+echo
+echo "Done: $TAG"
+echo "  release: https://github.com/ttscoff/graffiti/releases/tag/$TAG"
+echo "  formula: $FORMULA"
+echo "  local VERSION bumped in cli/graffiti (+ brew example); commit graffitimoe separately if needed"
+echo "  upgrade: brew update && brew upgrade graffiti"
+```
+
 ## Verify Production Random
 
 Fetch a random message from production.
