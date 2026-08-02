@@ -2,10 +2,14 @@
   'use strict';
 
   var POLL_MS = 10000;
+  var MIN_POLL_GAP_MS = 2000;
   var MAX = 10;
   var grid = document.querySelector('.wall-grid');
   var empty = document.querySelector('.wall-empty');
   if (!grid || !empty) return;
+
+  var inFlight = false;
+  var lastPollAt = 0;
 
   function escapeHtml(text) {
     return String(text)
@@ -26,6 +30,9 @@
     var el = document.createElement('div');
     el.className = 'terminal terminal-enter';
     el.setAttribute('data-id', String(msg.id));
+    el.addEventListener('animationend', function () {
+      el.classList.remove('terminal-enter');
+    }, { once: true });
     el.innerHTML =
       '<div class="terminal-bar">' +
       '<span class="terminal-dot terminal-dot-red"></span>' +
@@ -42,6 +49,19 @@
   function setEmpty(isEmpty) {
     if (isEmpty) empty.removeAttribute('hidden');
     else empty.setAttribute('hidden', '');
+  }
+
+  function domIdSequence() {
+    return Array.prototype.slice.call(grid.querySelectorAll('.terminal[data-id]'))
+      .map(function (node) { return node.getAttribute('data-id'); });
+  }
+
+  function sequencesMatch(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   }
 
   function reconcile(messages) {
@@ -71,11 +91,13 @@
       }
     }
 
-    // Reorder to match server list exactly
-    messages.forEach(function (msg) {
-      var node = byId[String(msg.id)];
-      if (node) grid.appendChild(node);
-    });
+    // Reorder only when DOM sequence differs from server list
+    if (!sequencesMatch(domIdSequence(), serverIds)) {
+      messages.forEach(function (msg) {
+        var node = byId[String(msg.id)];
+        if (node) grid.appendChild(node);
+      });
+    }
 
     // Cap (server already <=10; safety)
     while (grid.querySelectorAll('.terminal').length > MAX) {
@@ -89,17 +111,29 @@
 
   function poll() {
     if (document.visibilityState === 'hidden') return;
+    if (inFlight) return;
+
+    inFlight = true;
     fetch('/recent', { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('recent ' + r.status);
         return r.json();
       })
-      .then(reconcile)
-      .catch(function () { /* ignore transient errors */ });
+      .then(function (data) {
+        reconcile(data);
+        lastPollAt = Date.now();
+      })
+      .catch(function () { /* ignore transient errors */ })
+      .then(function () {
+        inFlight = false;
+      });
   }
 
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') poll();
+    if (document.visibilityState !== 'visible') return;
+    if (inFlight) return;
+    if (Date.now() - lastPollAt < MIN_POLL_GAP_MS) return;
+    poll();
   });
 
   setInterval(poll, POLL_MS);
