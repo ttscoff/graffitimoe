@@ -47,6 +47,9 @@ blank="$(curl --silent --fail "http://127.0.0.1:$port/random")"
 sprayed="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall&color=cyan' "http://127.0.0.1:$port/add")"
 [[ "$sprayed" == "Sprayed." ]]
 
+sprayed_trailing="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall&color=cyan' "http://127.0.0.1:$port/add/")"
+[[ "$sprayed_trailing" == "Sprayed." ]]
+
 random="$(curl --silent --fail "http://127.0.0.1:$port/random")"
 [[ "$random" == "hello wall" ]]
 

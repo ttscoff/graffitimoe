@@ -85,7 +85,15 @@ final class Request
     {
         $parsedPath = parse_url($path, PHP_URL_PATH);
 
-        return is_string($parsedPath) && $parsedPath !== '' ? $parsedPath : '/';
+        if (!is_string($parsedPath) || $parsedPath === '') {
+            return '/';
+        }
+
+        if ($parsedPath !== '/') {
+            $parsedPath = rtrim($parsedPath, '/');
+        }
+
+        return $parsedPath;
     }
 
     /** @param array<string, mixed> $server

@@ -58,6 +58,17 @@ final class RequestTest extends TestCase
         $this->assertFalse($disabled->colorEnabled());
     }
 
+    public function test_normalize_path_strips_trailing_slash_except_root(): void
+    {
+        $add = new Request('GET', '/add/', [], [], '', [], '1.2.3.4');
+        $root = new Request('GET', '/', [], [], '', [], '1.2.3.4');
+        $rootWithQuery = new Request('GET', '/?foo=bar', [], [], '', [], '1.2.3.4');
+
+        $this->assertSame('/add', $add->path);
+        $this->assertSame('/', $root->path);
+        $this->assertSame('/', $rootWithQuery->path);
+    }
+
     public function test_constructor_strips_query_from_path_and_exposes_request_data(): void
     {
         $request = new Request('POST', '/messages?color=always', ['color' => 'always'], [
