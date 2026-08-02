@@ -44,6 +44,12 @@ final class MessageSanitizerTest extends TestCase
         MessageSanitizer::sanitizeBody(str_repeat('a', 1001));
     }
 
+    public function test_rejects_padded_over_limit_after_newline_trim(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        MessageSanitizer::sanitizeBody("\n " . str_repeat('a', 999) . " \n");
+    }
+
     public function test_color_and_bold_normalization(): void
     {
         $this->assertSame('red', MessageSanitizer::normalizeColor('red'));

@@ -19,14 +19,14 @@ final class MessageSanitizer
         $text = str_replace("\t", '    ', $text);
         // Strip ESC and other controls except newline (\n = 0x0A)
         $text = preg_replace('/[\x00-\x09\x0B-\x1F\x7F]/u', '', $text) ?? '';
-        $trimmed = trim($text);
-        if ($trimmed === '') {
+        if (trim($text) === '') {
             throw new InvalidArgumentException('Message is empty');
         }
-        if (mb_strlen($trimmed, 'UTF-8') > self::MAX_LENGTH) {
+        $result = trim($text, "\n");
+        if (mb_strlen($result, 'UTF-8') > self::MAX_LENGTH) {
             throw new InvalidArgumentException('Message exceeds 1000 characters');
         }
-        return trim($text, "\n");
+        return $result;
     }
 
     public static function normalizeColor(?string $color): string
