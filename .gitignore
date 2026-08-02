@@ -5,3 +5,4 @@
 /data/*.sqlite-journal
 /.phpunit.cache/
 .DS_Store
+.superpowers/
