@@ -8,8 +8,9 @@ A tiny public graffiti wall: anyone can spray a short message; anyone can fetch 
 - Browsers hitting `/` land on `/add` to submit a message
 - `/random` always returns a random plain-text message
 - Messages are anonymous (names may be typed into the message body if desired)
+- Bodies may be multi-line ASCII art / spaced text; line breaks and horizontal spacing are preserved within the 500-character limit
 - Instant publish with soft moderation (admin can delete)
-- Output is safe for terminals: no user-controlled escape sequences or control characters
+- Output is safe for terminals: no user-controlled escape sequences or dangerous control characters
 - Optional controlled color via a server-owned palette (never raw user ANSI)
 - Host as cheaply as possible on existing Dreamhost shared hosting
 - Offer a Homebrew-installable `graffiti` CLI that reads and writes via curl
@@ -64,7 +65,7 @@ Admin ------> /admin -----------> list + delete
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | INTEGER PK | Auto-increment |
-| `body` | TEXT | Sanitized message, max 500 chars after trim |
+| `body` | TEXT | Sanitized message (may include newlines/spaces), max 500 chars after trim |
 | `color` | TEXT | Palette key: `default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` |
 | `bold` | INTEGER | 0 or 1 |
 | `created_at` | TEXT | UTC ISO-8601 timestamp |
@@ -78,25 +79,27 @@ No author column. Attribution, if any, lives inside `body`.
 
 **On write:**
 
-1. Trim leading/trailing whitespace
-2. Reject empty / whitespace-only
-3. Enforce max length 500 characters (Unicode-aware where practical in PHP)
-4. Strip ASCII control characters (U+0000–U+001F, U+007F) and any escape introducers; allow only normal printable text and ordinary spaces. Newlines inside the body: collapse to spaces (single-line fortunes keep curl output clean)
-5. Accept `color` only from the allowlisted palette; unknown → `default`
-6. Accept `bold` only as boolean
-7. Never persist user-supplied ANSI or HTML
+1. Normalize newlines: `\r\n` / `\r` → `\n`
+2. Trim leading/trailing whitespace (including leading/trailing newlines), but **preserve internal spaces, indentation, and newlines** so ASCII art survives
+3. Reject empty / whitespace-only
+4. Enforce max length 500 characters counting the full body including newlines (Unicode-aware where practical in PHP)
+5. Strip dangerous ASCII control characters (U+0000–U+0008, U+000B–U+001F, U+007F) and escape introducers. **Allow** newline (`\n`) and ordinary spaces. Convert tabs to spaces (e.g. 1 tab → 4 spaces) so layout is predictable across terminals
+6. Accept `color` only from the allowlisted palette; unknown → `default`
+7. Accept `bold` only as boolean
+8. Never persist user-supplied ANSI or HTML
 
 **On plain-text read (`/` / `/random` / CLI):**
 
 - `Content-Type: text/plain; charset=utf-8`
-- Emit sanitized `body` plus a trailing newline
-- If `color=always`, wrap with server-generated SGR sequences derived only from stored `color`/`bold`, then reset (`\033[0m`)
+- Emit sanitized `body` exactly (multi-line preserved), plus a single trailing newline if the body does not already end with one
+- If `color=always`, wrap the full body with server-generated SGR sequences derived only from stored `color`/`bold`, then reset (`\033[0m`)
 - If `color=never` (default), emit bare text
 - Do not implement server-side `color=auto` (server cannot know client TTY state)
 
 **On HTML read (recent list / admin):**
 
 - HTML-escape `body`
+- Render with CSS that preserves whitespace (`white-space: pre-wrap`) inside terminal frames
 - Apply color/bold via CSS classes mapped from the same palette — never by injecting ANSI into HTML
 
 **Why not pass through user ANSI:** Terminals interpret more than color (cursor control, window title, OSC sequences). User-controlled escapes are treated as an injection risk even for `text/plain`.
@@ -128,11 +131,13 @@ No author column. Attribution, if any, lives inside `body`.
 
 ### Browser `/add`
 
-- Minimal page: brand, short explanation, compose field, palette + bold controls, submit
+- Minimal page: brand, short explanation, multi-line textarea (not a single-line input), palette + bold controls, submit
+- Textarea hint that line breaks and spacing are kept (ASCII art welcome) within 500 characters
+- Use a monospace font in the compose field so art is editable WYSIWYG
 - Success: quiet confirmation on the same page
 - Errors: inline (too long, rate limited, etc.)
 - Below the form: **10 most recent** messages
-- Each recent message in a small terminal-chrome frame, monospace body, CSS color from palette
+- Each recent message in a small terminal-chrome frame, monospace body with preserved whitespace, CSS color from palette
 - Purpose: social proof that encourages spraying your own
 
 ### Empty pool
@@ -153,7 +158,7 @@ If there are no messages, plain-text random endpoints return a fixed fallback li
 |------------|----------|
 | `graffiti` | Print one random message (fortune-style) |
 | `graffiti spraypaint "…"` | POST a new message |
-| `echo "…" \| graffiti spraypaint` | Message from stdin when no argument |
+| `echo "…" \| graffiti spraypaint` | Message from stdin when no argument (multi-line stdin supported for ASCII art) |
 | `graffiti spraypaint --color red --bold "…"` | Submit with palette options |
 | `graffiti help` / `-h` | Usage |
 | `--color=always\|never\|auto` | Output coloring for read path |
@@ -200,13 +205,14 @@ Responses:
 ## Testing
 
 - Sanitize/length/palette validation tests
+- Multi-line / ASCII-art preservation (internal spaces + newlines kept; tabs expanded; other controls stripped)
 - Random selection + empty-pool fallback
 - Submit + rate limit behavior
 - Color output only when `color=always`, and only allowlisted SGR
-- HTML escaping on recent list
+- HTML escaping + whitespace preservation on recent list
 - Admin delete
 - CLI smoke against PHP built-in server or mocked HTTP
-- Manual checks: browser form, `curl` `/` and `/random`, colored vs plain, brew-formula install path sanity
+- Manual checks: browser form, `curl` `/` and `/random`, multi-line art, colored vs plain, brew-formula install path sanity
 
 ## Follow-ups (explicitly later)
 
@@ -218,7 +224,8 @@ Responses:
 
 - Soft moderation (instant publish + admin delete)
 - Anonymous only; names optional inside message text
-- Max length 500 characters
+- Max length 500 characters (includes newlines)
+- Multi-line bodies with preserved spacing for ASCII art; tabs → spaces; other controls stripped
 - Smart `/` plus explicit `/random`
 - Dreamhost + PHP + SQLite
 - Recent 10 on `/add` in terminal-chrome frames
