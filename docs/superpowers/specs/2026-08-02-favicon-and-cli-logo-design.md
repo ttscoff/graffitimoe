@@ -31,11 +31,11 @@ Use the spray-paint icon as the site favicon (not inline on the page). Show a co
 - Update both:
   - `cli/graffiti` in this repo
   - `/Users/ttscoff/Sites/dev/graffiti/graffiti` (upstream Homebrew CLI)
+- Ship a new CLI package: bump patch version (e.g. `0.1.1` → `0.1.2`), tag/release the upstream `ttscoff/graffiti` repo so Homebrew can pick up the logo change, and refresh `brew/graffiti.rb.example` (and the live `ttscoff/thelab` formula if that tap is available locally) with the new version/url/sha.
 
 ## Out of scope
 
 - Showing the icon in the page hero or footer
-- Changing Homebrew formula packaging beyond the script itself
 - Multi-color message (spraypaint) roadmap item
 
 ## Acceptance
@@ -43,3 +43,4 @@ Use the spray-paint icon as the site favicon (not inline on the page). Show a co
 - Browser tab shows the favicon on `/add` and admin pages.
 - `graffiti --help` and `graffiti --version` show the spray-can art; colors appear on a TTY with auto/always, plain otherwise.
 - Both CLI copies stay in sync for the logo behavior.
+- New CLI version is tagged/released and Homebrew formula metadata points at it.
