@@ -92,4 +92,20 @@ final class MessageRepositoryTest extends TestCase
         $this->assertCount(1, $left);
         $this->assertSame($b, $left[0]['id']);
     }
+
+    public function test_schema_has_flag_count_and_message_flags(): void
+    {
+        $pdo = Database::connect($this->path);
+        $cols = $pdo->query('PRAGMA table_info(messages)')->fetchAll();
+        $names = array_column($cols, 'name');
+        $this->assertContains('flag_count', $names);
+
+        $tables = $pdo->query(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='message_flags'"
+        )->fetchAll();
+        $this->assertNotSame([], $tables);
+
+        $fk = (int) $pdo->query('PRAGMA foreign_keys')->fetchColumn();
+        $this->assertSame(1, $fk);
+    }
 }
