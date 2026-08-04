@@ -65,6 +65,42 @@ final class AddHandlerTest extends TestCase
         $this->assertSame('html:1:admin=0', $response->body);
     }
 
+    public function test_get_hydrates_flagged_ids_and_csrf_token_for_ip_without_owned_messages(): void
+    {
+        $ipHash = RateLimiter::hashIp('9.9.9.9', 'secret');
+        $id = $this->repo->create('a thoughtful line about midnight trains', 'cyan', false, 'poster');
+        $this->assertSame('flagged', $this->repo->toggleCommunityFlag($id, $ipHash));
+
+        $captured = null;
+        $handler = new AddHandler(
+            $this->repo,
+            new RateLimiter($this->repo, 5, 600),
+            'secret',
+            $this->session,
+            $this->owned,
+            $this->flagged,
+            function (array $vars) use (&$captured): string {
+                $captured = $vars;
+                return '';
+            },
+        );
+
+        $handler->handle(new Request(
+            'GET',
+            '/add',
+            [],
+            [],
+            '',
+            [],
+            '9.9.9.9',
+        ));
+
+        $this->assertNotNull($captured);
+        $this->assertContains($id, $captured['flaggedIds']);
+        $this->assertNotSame('', $captured['csrfToken']);
+        $this->assertSame([], $captured['ownedIds']);
+    }
+
     public function test_admin_get_loads_up_to_50_recent(): void
     {
         for ($i = 0; $i < 12; $i++) {

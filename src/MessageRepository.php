@@ -142,7 +142,11 @@ final class MessageRepository
             return null;
         }
 
-        $this->pdo->beginTransaction();
+        // BEGIN IMMEDIATE grabs SQLite's write lock up front instead of the
+        // deferred lock beginTransaction() would use, so a second writer
+        // fails fast on the BEGIN itself (as a normal PDOException we let
+        // propagate) rather than racing us between the read and write below.
+        $this->pdo->exec('BEGIN IMMEDIATE');
         try {
             $check = $this->pdo->prepare(
                 'SELECT 1 FROM message_flags WHERE message_id = :id AND ip_hash = :ip'
@@ -180,6 +184,15 @@ final class MessageRepository
                     ':created_at' => gmdate('c'),
                 ]);
             } catch (\PDOException $e) {
+                if (!self::isUniqueConstraintViolation($e)) {
+                    // Not a duplicate-flag race (e.g. disk I/O error, FK
+                    // failure, locked database) — surface it instead of
+                    // reporting a false "flagged" success.
+                    throw $e;
+                }
+                // This IP already has a flag row (inserted concurrently
+                // before we took the write lock, or a stale read). Treat it
+                // as an already-flagged no-op rather than an error.
                 $this->pdo->rollBack();
                 return 'flagged';
             }
@@ -205,6 +218,23 @@ final class MessageRepository
             }
             throw $e;
         }
+    }
+
+    /**
+     * True only for a genuine UNIQUE constraint violation (SQLite error code
+     * 19, SQLSTATE 23000, message mentions "UNIQUE"). Other PDOExceptions —
+     * database locked, disk I/O errors, foreign key failures — also carry
+     * code 19/SQLSTATE 23000 under SQLite, so the message text is required
+     * to tell them apart.
+     */
+    private static function isUniqueConstraintViolation(\PDOException $e): bool
+    {
+        if (stripos($e->getMessage(), 'unique') === false) {
+            return false;
+        }
+        $sqlState = $e->errorInfo[0] ?? null;
+        $driverCode = $e->errorInfo[1] ?? null;
+        return $sqlState === '23000' || $driverCode === 19;
     }
 
     /**

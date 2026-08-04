@@ -189,4 +189,50 @@ final class MessageRepositoryTest extends TestCase
     {
         $this->assertNull($this->repo->toggleCommunityFlag(999999, 'ip-a'));
     }
+
+    /**
+     * toggleCommunityFlag() narrows its INSERT-time catch to genuine UNIQUE
+     * violations (the only case where "someone already flagged this from
+     * this IP" is a safe no-op) so a locked database, disk error, or FK
+     * failure isn't mistaken for success. SQLite reports both UNIQUE and
+     * FOREIGN KEY violations under SQLSTATE 23000 / driver code 19, so the
+     * message text has to be checked too — this exercises the classifier
+     * against real error shapes captured from the sqlite PDO driver.
+     */
+    public function test_unique_constraint_classifier_distinguishes_real_races_from_other_errors(): void
+    {
+        $classifier = new \ReflectionMethod(MessageRepository::class, 'isUniqueConstraintViolation');
+
+        $unique = new \PDOException(
+            'SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: message_flags.message_id, message_flags.ip_hash'
+        );
+        $unique->errorInfo = ['23000', 19, 'UNIQUE constraint failed: message_flags.message_id, message_flags.ip_hash'];
+        $this->assertTrue($classifier->invoke(null, $unique));
+
+        $foreignKey = new \PDOException('SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed');
+        $foreignKey->errorInfo = ['23000', 19, 'FOREIGN KEY constraint failed'];
+        $this->assertFalse($classifier->invoke(null, $foreignKey));
+
+        $locked = new \PDOException('SQLSTATE[HY000]: General error: 5 database is locked');
+        $locked->errorInfo = ['HY000', 5, 'database is locked'];
+        $this->assertFalse($classifier->invoke(null, $locked));
+    }
+
+    public function test_toggle_community_flag_uses_begin_immediate_write_lock(): void
+    {
+        // With BEGIN IMMEDIATE, a second connection cannot even start a
+        // write transaction on the same database file until the first one
+        // finishes — this is what closes the race the narrowed catch used
+        // to paper over. We only assert the happy path still commits
+        // correctly with the new locking strategy; genuinely reproducing
+        // the old cross-process race in-process isn't practical since the
+        // fix's entire purpose is to serialize access at the SQLite level.
+        $id = $this->repo->create('hello painted world!!', 'red', false, 'poster');
+
+        $this->assertSame('flagged', $this->repo->toggleCommunityFlag($id, 'ip-a'));
+        $this->assertFalse($this->pdo()->inTransaction());
+
+        $row = $this->pdo()->query('SELECT flag_count FROM messages WHERE id=' . $id)->fetch();
+        $this->assertSame(1, (int) $row['flag_count']);
+    }
 }

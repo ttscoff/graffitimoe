@@ -248,7 +248,7 @@
       if (!res.ok) throw new Error('flag failed');
       return res.text();
     }).then(function (text) {
-      var flagged = text.indexOf('Flagged') !== -1;
+      var flagged = text.trim() === 'Flagged.';
       if (flagged) {
         if (!hasFlagged(id)) flaggedIds.push(id);
         if (btn) btn.classList.add('is-flagged-by-me');
