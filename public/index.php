@@ -58,6 +58,7 @@ try {
             $config['ip_hash_secret'],
             $session,
             $owned,
+            $flagged,
             'render_add',
         ))->handle($request);
     } elseif ($request->method === 'POST' && $request->path === '/delete') {

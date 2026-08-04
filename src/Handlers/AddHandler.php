@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Graffiti\Handlers;
 
+use Graffiti\FlaggedMessages;
 use Graffiti\Http\Request;
 use Graffiti\Http\Response;
 use Graffiti\MessageRepository;
@@ -26,6 +27,7 @@ final class AddHandler
         private string $ipSecret,
         private SessionBag $session,
         private OwnedMessages $owned,
+        private FlaggedMessages $flagged,
         private $renderAddPage,
     ) {
     }
@@ -35,16 +37,25 @@ final class AddHandler
         if ($request->method === 'GET') {
             $isAdmin = $this->session->isAdmin();
             $ownedIds = $this->owned->idList();
+            $recent = $this->repo->recent(
+                $isAdmin ? self::ADMIN_RECENT_LIMIT : self::PUBLIC_RECENT_LIMIT
+            );
+            $ipHash = RateLimiter::hashIp($request->ip, $this->ipSecret);
+            $flaggedIds = $this->repo->flaggedMessageIdsForIp(
+                array_map(static fn (array $m): int => (int) $m['id'], $recent),
+                $ipHash,
+            );
+            $this->flagged->sync($flaggedIds);
+
             return Response::html(($this->renderAddPage)([
-                'recent' => $this->repo->recent(
-                    $isAdmin ? self::ADMIN_RECENT_LIMIT : self::PUBLIC_RECENT_LIMIT
-                ),
+                'recent' => $recent,
                 'ok' => ($request->query['ok'] ?? null) === '1',
                 'error' => $request->query['error'] ?? null,
                 'colors' => MessageSanitizer::COLORS,
                 'isAdmin' => $isAdmin,
                 'ownedIds' => $ownedIds,
-                'csrfToken' => ($isAdmin || $ownedIds !== []) ? $this->session->csrfToken() : '',
+                'csrfToken' => $this->session->csrfToken(),
+                'flaggedIds' => $this->flagged->idList(),
             ]));
         }
 

@@ -6,6 +6,7 @@ namespace Graffiti\Tests;
 
 use Graffiti\ArraySession;
 use Graffiti\Database;
+use Graffiti\FlaggedMessages;
 use Graffiti\Handlers\AddHandler;
 use Graffiti\Http\Request;
 use Graffiti\MessageRepository;
@@ -19,6 +20,7 @@ final class AddHandlerTest extends TestCase
     private MessageRepository $repo;
     private ArraySession $session;
     private OwnedMessages $owned;
+    private FlaggedMessages $flagged;
     private AddHandler $handler;
 
     protected function setUp(): void
@@ -27,6 +29,7 @@ final class AddHandlerTest extends TestCase
         $this->repo = new MessageRepository(Database::connect($this->path));
         $this->session = new ArraySession();
         $this->owned = new OwnedMessages($this->session);
+        $this->flagged = new FlaggedMessages($this->session);
         $limiter = new RateLimiter($this->repo, 5, 600);
         $this->handler = new AddHandler(
             $this->repo,
@@ -34,6 +37,7 @@ final class AddHandlerTest extends TestCase
             'secret',
             $this->session,
             $this->owned,
+            $this->flagged,
             fn (array $vars): string => 'html:' . count($vars['recent']) . ':admin=' . ($vars['isAdmin'] ? '1' : '0'),
         );
     }
@@ -249,6 +253,7 @@ final class AddHandlerTest extends TestCase
             'secret',
             $this->session,
             $this->owned,
+            $this->flagged,
             fn (): string => '',
         );
         $request = fn (): Request => new Request(
