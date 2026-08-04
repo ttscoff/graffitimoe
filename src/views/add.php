@@ -12,11 +12,14 @@ use Graffiti\Color;
  * @var bool $isAdmin
  * @var list<int> $ownedIds
  * @var string $csrfToken
+ * @var list<int> $flaggedIds
  */
 $isAdmin = $isAdmin ?? false;
 $ownedIds = $ownedIds ?? [];
 $csrfToken = $csrfToken ?? '';
+$flaggedIds = $flaggedIds ?? [];
 $ownedLookup = array_fill_keys($ownedIds, true);
+$flaggedLookup = array_fill_keys($flaggedIds, true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -128,11 +131,12 @@ $ownedLookup = array_fill_keys($ownedIds, true);
     <?php if ($isAdmin): ?>
       data-admin="1"
     <?php endif; ?>
-    <?php if ($csrfToken !== ''): ?>
-      data-csrf="<?= e($csrfToken) ?>"
-    <?php endif; ?>
+    data-csrf="<?= e($csrfToken) ?>"
     <?php if ($ownedIds !== []): ?>
       data-owned="<?= e(implode(',', array_map('strval', $ownedIds))) ?>"
+    <?php endif; ?>
+    <?php if ($flaggedIds !== []): ?>
+      data-flagged-ids="<?= e(implode(',', array_map('strval', $flaggedIds))) ?>"
     <?php endif; ?>
   >
     <h2 class="wall-title"><?= $isAdmin ? 'recent sprays (admin)' : 'recent sprays' ?></h2>
@@ -144,6 +148,7 @@ $ownedLookup = array_fill_keys($ownedIds, true);
           $outerClass = Color::outerCssClass($message['color'], $message['bold'], $spans);
           $canDelete = $isAdmin || isset($ownedLookup[$message['id']]);
           $deleteAction = $isAdmin ? '/admin' : '/delete';
+          $flaggedByMe = isset($flaggedLookup[$message['id']]);
         ?>
         <div class="terminal<?= !empty($message['flagged']) && $isAdmin ? ' is-flagged' : '' ?>" data-id="<?= e((string) $message['id']) ?>"<?= !empty($message['flagged']) ? ' data-flagged="1"' : '' ?>>
           <div class="terminal-bar">
@@ -169,6 +174,16 @@ $ownedLookup = array_fill_keys($ownedIds, true);
                 <button type="submit" class="wall-delete-btn" title="<?= $isAdmin ? 'Delete this spray' : 'Delete your spray' ?>">delete</button>
               </form>
             <?php endif; ?>
+            <form class="wall-flag" method="post" action="/flag">
+              <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+              <input type="hidden" name="id" value="<?= e((string) $message['id']) ?>">
+              <input type="hidden" name="next" value="/add">
+              <button
+                type="submit"
+                class="wall-flag-btn<?= $flaggedByMe ? ' is-flagged-by-me' : '' ?>"
+                title="<?= $flaggedByMe ? 'Remove your flag' : 'Flag this spray' ?>"
+              >flag</button>
+            </form>
           </div>
           <pre class="terminal-body<?= $outerClass !== '' ? ' ' . e($outerClass) : '' ?>"><?= Color::renderHtmlBody($message['body'], $message['color'], $message['bold'], $spans) ?></pre>
         </div>

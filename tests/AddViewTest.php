@@ -264,7 +264,34 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('data-owned="10"', $html);
         $this->assertStringContainsString('action="/delete"', $html);
         $this->assertSame(1, substr_count($html, 'class="wall-delete"'));
-        $this->assertStringContainsString('name="id" value="10"', $html);
-        $this->assertStringNotContainsString('name="id" value="11"', $html);
+
+        $deleteFormStart = strpos($html, 'class="wall-delete"');
+        $deleteFormEnd = strpos($html, '</form>', $deleteFormStart);
+        $deleteForm = substr($html, $deleteFormStart, $deleteFormEnd - $deleteFormStart);
+        $this->assertStringContainsString('name="id" value="10"', $deleteForm);
+        $this->assertStringNotContainsString('name="id" value="11"', $deleteForm);
+    }
+
+    public function test_add_view_has_flag_controls(): void
+    {
+        $html = render_add([
+            'recent' => [[
+                'id' => 5,
+                'body' => 'hello painted world!!',
+                'color' => 'red',
+                'bold' => false,
+                'created_at' => 'x',
+            ]],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'csrfToken' => 'tok',
+            'flaggedIds' => [5],
+        ]);
+        $this->assertStringContainsString('action="/flag"', $html);
+        $this->assertStringContainsString('wall-flag-btn', $html);
+        $this->assertStringContainsString('is-flagged-by-me', $html);
+        $this->assertStringContainsString('data-csrf="tok"', $html);
+        $this->assertStringContainsString('data-flagged-ids="5"', $html);
     }
 }

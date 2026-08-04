@@ -455,6 +455,11 @@ textarea:focus {
   margin-left: 0.35rem;
 }
 
+.wall-flag {
+  margin: 0;
+  margin-left: 0.35rem;
+}
+
 .flag-badge {
   display: inline-block;
   margin-left: 0.45rem;
@@ -516,6 +521,38 @@ textarea:focus {
 .admin-delete-btn:hover {
   background: rgba(255, 92, 108, 0.22);
   border-color: var(--term-red);
+}
+
+.wall-flag-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 210, 63, 0.45);
+  background: rgba(255, 210, 63, 0.12);
+  color: var(--sun-yellow);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.wall-flag-btn:hover {
+  background: rgba(255, 210, 63, 0.22);
+  border-color: var(--sun-yellow);
+  opacity: 0.8;
+}
+
+.wall-flag-btn.is-flagged-by-me {
+  opacity: 1;
+  background: rgba(255, 210, 63, 0.28);
+  border-color: var(--sun-yellow);
+}
+
+.wall-flag-btn.is-flagged-by-me:hover {
+  background: rgba(255, 210, 63, 0.4);
 }
 
 .terminal-dot {
