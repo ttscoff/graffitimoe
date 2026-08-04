@@ -321,6 +321,17 @@
   if (form) {
     form.addEventListener('submit', function () {
       if (paintMode) {
+        // Match server sanitizeBody(): strip edge newlines so spans still partition body.
+        while (body.value.startsWith('\n') && charColors.length > 0) {
+          body.value = body.value.slice(1);
+          charColors.shift();
+          charBolds.shift();
+        }
+        while (body.value.endsWith('\n') && charColors.length > 0) {
+          body.value = body.value.slice(0, -1);
+          charColors.pop();
+          charBolds.pop();
+        }
         syncSpansField();
         var runs = buildRuns();
         if (runs && runs[0]) {

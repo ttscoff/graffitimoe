@@ -111,7 +111,18 @@ final class MessageSanitizer
         }
 
         if ($concat !== $body) {
-            return null;
+            // sanitizeBody() trims leading/trailing newlines; paint runs often still include them.
+            if (trim($concat, "\n") !== $body) {
+                return null;
+            }
+            $runs = self::trimEdgeNewlinesFromRuns($runs);
+            $concat = '';
+            foreach ($runs as $run) {
+                $concat .= $run['t'];
+            }
+            if ($concat !== $body || $runs === []) {
+                return null;
+            }
         }
 
         // Trivial: one uniform run — store as message-level color/bold instead
@@ -120,5 +131,32 @@ final class MessageSanitizer
         }
 
         return $runs;
+    }
+
+    /**
+     * @param list<array{t:string,c:string,b?:bool}> $runs
+     * @return list<array{t:string,c:string,b?:bool}>
+     */
+    private static function trimEdgeNewlinesFromRuns(array $runs): array
+    {
+        while ($runs !== [] && str_starts_with($runs[0]['t'], "\n")) {
+            $runs[0]['t'] = substr($runs[0]['t'], 1);
+            if ($runs[0]['t'] === '') {
+                array_shift($runs);
+            }
+        }
+
+        while ($runs !== []) {
+            $last = array_key_last($runs);
+            if (!str_ends_with($runs[$last]['t'], "\n")) {
+                break;
+            }
+            $runs[$last]['t'] = substr($runs[$last]['t'], 0, -1);
+            if ($runs[$last]['t'] === '') {
+                array_pop($runs);
+            }
+        }
+
+        return array_values($runs);
     }
 }

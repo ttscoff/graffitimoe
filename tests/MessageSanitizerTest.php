@@ -133,6 +133,19 @@ final class MessageSanitizerTest extends TestCase
         ]));
     }
 
+    public function test_normalize_spans_trims_edge_newlines_to_match_sanitized_body(): void
+    {
+        $body = "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit!!";
+        $spans = MessageSanitizer::normalizeSpans($body, [
+            ['t' => 'Lorem ipsum ', 'c' => 'red'],
+            ['t' => "dolor sit amet,\nconsectetur adipiscing elit!!\n", 'c' => 'cyan'],
+        ]);
+        $this->assertSame([
+            ['t' => 'Lorem ipsum ', 'c' => 'red'],
+            ['t' => "dolor sit amet,\nconsectetur adipiscing elit!!", 'c' => 'cyan'],
+        ], $spans);
+    }
+
     public function test_normalize_spans_empty_or_trivial_returns_null(): void
     {
         $this->assertNull(MessageSanitizer::normalizeSpans('hi', null));
