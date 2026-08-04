@@ -38,15 +38,15 @@ final class MessageSanitizerTest extends TestCase
         MessageSanitizer::sanitizeBody("   \n");
     }
 
-    public function test_rejects_under_20_chars(): void
+    public function test_rejects_under_10_chars(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        MessageSanitizer::sanitizeBody(str_repeat('a', 19));
+        MessageSanitizer::sanitizeBody(str_repeat('a', 9));
     }
 
-    public function test_accepts_exactly_20_chars(): void
+    public function test_accepts_exactly_10_chars(): void
     {
-        $body = str_repeat('a', 20);
+        $body = str_repeat('a', 10);
         $this->assertSame($body, MessageSanitizer::sanitizeBody($body));
     }
 

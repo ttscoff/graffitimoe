@@ -109,7 +109,7 @@ You can also send `X-Admin-Password: YOUR_ADMIN_PASSWORD` instead of Bearer.
 graffiti.moe is designed for safe terminal output:
 
 - **No raw ANSI from users.** Submitters pick a palette key (`default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`); the server emits escape codes only when `?color=always` is set on `/` or `/random`.
-- **Control-character stripping.** Bodies are sanitized on write: ESC and other control bytes are removed (newlines preserved); 20–1000 characters after trim.
+- **Control-character stripping.** Bodies are sanitized on write: ESC and other control bytes are removed (newlines preserved); 10–1000 characters after trim.
 - **Rate limiting.** POST `/add` is limited per hashed IP (see config).
 - **Honeypot.** The HTML form includes a hidden `website` field; bots that fill it are rejected quietly.
 - **Secrets outside the web root.** Keep `config/config.php` and the SQLite file under `data/` out of the public docroot in production (see [docs/deploy-dreamhost.md](docs/deploy-dreamhost.md)).

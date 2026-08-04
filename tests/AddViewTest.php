@@ -140,7 +140,7 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('id="brush-palette"', $html);
         $this->assertStringContainsString('id="paint-hint"', $html);
         $this->assertStringContainsString('id="compose-hint"', $html);
-        $this->assertStringContainsString('20 character minimum', $html);
+        $this->assertStringContainsString('10 character minimum', $html);
         $this->assertStringContainsString('name="spans"', $html);
         $this->assertStringContainsString('name="brush"', $html);
     }

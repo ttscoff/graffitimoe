@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 final class MessageSanitizer
 {
-    public const MIN_LENGTH = 20;
+    public const MIN_LENGTH = 10;
     public const MAX_LENGTH = 1000;
 
     /** @var list<string> */

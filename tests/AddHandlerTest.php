@@ -332,7 +332,7 @@ final class AddHandlerTest extends TestCase
             [],
             ['HTTP_ACCEPT' => 'text/plain'],
             '',
-            ['body' => str_repeat('a', 19)],
+            ['body' => str_repeat('a', 9)],
             '7.7.7.8',
         ));
 

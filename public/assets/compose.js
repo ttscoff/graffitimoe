@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var MIN = 20;
+  var MIN = 10;
   var MAX = 1000;
 
   var body = document.getElementById('body');

@@ -106,7 +106,7 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
       </button>
     </div>
 
-    <p id="compose-hint" class="paint-hint">Enter your graffiti above. 20 character minimum, 1000 character maximum.</p>
+    <p id="compose-hint" class="paint-hint">Enter your graffiti above. 10 character minimum, 1000 character maximum.</p>
     <p id="paint-hint" class="paint-hint" hidden>Choose a color and optional bold, then drag a rectangle to paint — bold is part of the brush</p>
 
     <div class="controls" id="compose-actions">
