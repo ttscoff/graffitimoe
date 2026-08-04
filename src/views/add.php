@@ -43,6 +43,8 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
 
   <?php if ($ok): ?>
     <p class="flash flash-ok">sprayed. it&rsquo;s on the wall below.</p>
+  <?php elseif ($error === 'action'): ?>
+    <p class="flash flash-error">that action didn&rsquo;t go through &mdash; refresh and try again.</p>
   <?php elseif ($error !== null && $error !== ''): ?>
     <p class="flash flash-error">couldn&rsquo;t spray that &mdash; too short, too long, empty, or you&rsquo;re going too fast. try again.</p>
   <?php endif; ?>

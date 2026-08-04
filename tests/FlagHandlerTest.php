@@ -64,7 +64,7 @@ final class FlagHandlerTest extends TestCase
             ['id' => (string) $id, 'csrf_token' => 'nope'], '1.2.3.4',
         ));
         $this->assertSame(302, $response->status);
-        $this->assertSame('/add?error=invalid', $response->headers['Location']);
+        $this->assertSame('/add?error=action', $response->headers['Location']);
     }
 
     public function test_missing_message_is_404(): void

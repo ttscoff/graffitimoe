@@ -91,7 +91,7 @@ final class DeleteHandlerTest extends TestCase
         ));
 
         $this->assertSame(302, $response->status);
-        $this->assertSame('/add?error=invalid', $response->headers['Location']);
+        $this->assertSame('/add?error=action', $response->headers['Location']);
         $this->assertNotNull($this->repo->random());
     }
 }

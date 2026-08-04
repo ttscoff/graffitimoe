@@ -22,9 +22,18 @@ try {
     }
     $config = require $configPath;
 
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || ($_SERVER['REQUEST_SCHEME'] ?? '') === 'https'
-        || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    $forwardedProto = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    if (array_key_exists('session_cookie_secure', $config) && is_bool($config['session_cookie_secure'])) {
+        $isHttps = $config['session_cookie_secure'];
+    } elseif ($forwardedProto === 'https' || $forwardedProto === 'http') {
+        // Prefer the client-facing scheme from the reverse proxy. Indigo proxies
+        // http://graffiti.test to an HTTPS Apache backend, so $_SERVER['HTTPS'] is
+        // on even when the browser is on plain HTTP — Secure cookies then never stick.
+        $isHttps = $forwardedProto === 'https';
+    } else {
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ($_SERVER['REQUEST_SCHEME'] ?? '') === 'https';
+    }
 
     session_set_cookie_params([
         'httponly' => true,

@@ -10,4 +10,7 @@ return [
     'rate_limit_window_seconds' => 600,
     'base_url' => 'https://graffiti.moe',
     'session_name' => 'graffiti_admin',
+    // Optional. When unset, Secure cookies follow X-Forwarded-Proto / HTTPS.
+    // Set false for local HTTP reverse proxies that terminate TLS at the backend.
+    // 'session_cookie_secure' => false,
 ];

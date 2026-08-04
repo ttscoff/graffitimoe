@@ -77,6 +77,6 @@ final class FlagHandler
     {
         return $request->wantsPlainText()
             ? Response::plain($message, $status)
-            : Response::redirect('/add?error=invalid');
+            : Response::redirect('/add?error=action');
     }
 }
