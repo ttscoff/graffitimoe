@@ -8,8 +8,17 @@ use PDO;
 
 final class MessageRepository
 {
+    public const COMMUNITY_FLAG_THRESHOLD = 3;
+
     public function __construct(private PDO $pdo)
     {
+    }
+
+    public function exists(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM messages WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetchColumn() !== false;
     }
 
     /**
@@ -104,6 +113,8 @@ final class MessageRepository
 
     public function delete(int $id): bool
     {
+        $this->pdo->prepare('DELETE FROM message_flags WHERE message_id = :id')
+            ->execute([':id' => $id]);
         $stmt = $this->pdo->prepare('DELETE FROM messages WHERE id = :id');
         $stmt->execute([':id' => $id]);
         return $stmt->rowCount() > 0;
@@ -117,9 +128,102 @@ final class MessageRepository
             return 0;
         }
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $this->pdo->prepare("DELETE FROM message_flags WHERE message_id IN ($placeholders)")
+            ->execute($ids);
         $stmt = $this->pdo->prepare("DELETE FROM messages WHERE id IN ($placeholders)");
         $stmt->execute($ids);
         return $stmt->rowCount();
+    }
+
+    /** @return 'flagged'|'unflagged'|null */
+    public function toggleCommunityFlag(int $messageId, string $ipHash): ?string
+    {
+        if ($messageId <= 0 || !$this->exists($messageId)) {
+            return null;
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $check = $this->pdo->prepare(
+                'SELECT 1 FROM message_flags WHERE message_id = :id AND ip_hash = :ip'
+            );
+            $check->execute([':id' => $messageId, ':ip' => $ipHash]);
+            if ($check->fetchColumn() !== false) {
+                $this->pdo->prepare(
+                    'DELETE FROM message_flags WHERE message_id = :id AND ip_hash = :ip'
+                )->execute([':id' => $messageId, ':ip' => $ipHash]);
+
+                $row = $this->pdo->prepare('SELECT flag_count FROM messages WHERE id = :id');
+                $row->execute([':id' => $messageId]);
+                $prev = (int) $row->fetchColumn();
+                $next = max(0, $prev - 1);
+                if ($prev >= self::COMMUNITY_FLAG_THRESHOLD && $next < self::COMMUNITY_FLAG_THRESHOLD) {
+                    $this->pdo->prepare(
+                        'UPDATE messages SET flag_count = :c, flagged = 0 WHERE id = :id'
+                    )->execute([':c' => $next, ':id' => $messageId]);
+                } else {
+                    $this->pdo->prepare(
+                        'UPDATE messages SET flag_count = :c WHERE id = :id'
+                    )->execute([':c' => $next, ':id' => $messageId]);
+                }
+                $this->pdo->commit();
+                return 'unflagged';
+            }
+
+            try {
+                $this->pdo->prepare(
+                    'INSERT INTO message_flags (message_id, ip_hash, created_at)
+                     VALUES (:id, :ip, :created_at)'
+                )->execute([
+                    ':id' => $messageId,
+                    ':ip' => $ipHash,
+                    ':created_at' => gmdate('c'),
+                ]);
+            } catch (\PDOException $e) {
+                $this->pdo->rollBack();
+                return 'flagged';
+            }
+
+            $row = $this->pdo->prepare('SELECT flag_count FROM messages WHERE id = :id');
+            $row->execute([':id' => $messageId]);
+            $prev = (int) $row->fetchColumn();
+            $next = $prev + 1;
+            if ($next >= self::COMMUNITY_FLAG_THRESHOLD) {
+                $this->pdo->prepare(
+                    'UPDATE messages SET flag_count = :c, flagged = 1 WHERE id = :id'
+                )->execute([':c' => $next, ':id' => $messageId]);
+            } else {
+                $this->pdo->prepare(
+                    'UPDATE messages SET flag_count = :c WHERE id = :id'
+                )->execute([':c' => $next, ':id' => $messageId]);
+            }
+            $this->pdo->commit();
+            return 'flagged';
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @param list<int> $messageIds
+     * @return list<int>
+     */
+    public function flaggedMessageIdsForIp(array $messageIds, string $ipHash): array
+    {
+        $messageIds = $this->normalizeIds($messageIds);
+        if ($messageIds === [] || $ipHash === '') {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT message_id FROM message_flags
+             WHERE ip_hash = ? AND message_id IN ($placeholders)"
+        );
+        $stmt->execute([$ipHash, ...$messageIds]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     /** @param list<mixed> $ids @return list<int> */
