@@ -125,4 +125,146 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('/assets/compose.js', $html);
         $this->assertStringNotContainsString('maxlength="1000"', $html);
     }
+
+    public function test_add_view_has_paint_mode_controls(): void
+    {
+        $html = render_add([
+            'recent' => [],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+
+        $this->assertStringContainsString('id="paint-toggle"', $html);
+        $this->assertStringContainsString('id="paint-surface"', $html);
+        $this->assertStringContainsString('id="brush-palette"', $html);
+        $this->assertStringContainsString('id="paint-hint"', $html);
+        $this->assertStringContainsString('id="compose-hint"', $html);
+        $this->assertStringContainsString('20 character minimum', $html);
+        $this->assertStringContainsString('name="spans"', $html);
+        $this->assertStringContainsString('name="brush"', $html);
+    }
+
+    public function test_add_view_renders_painted_spans_in_wall(): void
+    {
+        $html = render_add([
+            'recent' => [[
+                'id' => 3,
+                'body' => 'hiyo',
+                'color' => 'red',
+                'bold' => false,
+                'spans' => [
+                    ['t' => 'hi', 'c' => 'red'],
+                    ['t' => 'yo', 'c' => 'cyan'],
+                ],
+                'created_at' => 'x',
+            ]],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+
+        $this->assertStringContainsString('<span class="term-red">hi</span>', $html);
+        $this->assertStringContainsString('<span class="term-cyan">yo</span>', $html);
+    }
+
+    public function test_add_view_renders_mixed_bold_spans(): void
+    {
+        $html = render_add([
+            'recent' => [[
+                'id' => 3,
+                'body' => 'hiyo',
+                'color' => 'red',
+                'bold' => true,
+                'spans' => [
+                    ['t' => 'hi', 'c' => 'red', 'b' => true],
+                    ['t' => 'yo', 'c' => 'cyan'],
+                ],
+                'created_at' => 'x',
+            ]],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+        ]);
+
+        $this->assertStringContainsString('<span class="term-red term-bold">hi</span>', $html);
+        $this->assertStringContainsString('<span class="term-cyan">yo</span>', $html);
+        $this->assertStringNotContainsString('term-cyan term-bold', $html);
+    }
+
+    public function test_add_view_admin_wall_shows_delete_controls(): void
+    {
+        $html = render_add([
+            'recent' => [['id' => 42, 'body' => 'hello painted world!!', 'color' => 'red', 'bold' => false, 'created_at' => 'x']],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'isAdmin' => true,
+            'csrfToken' => 'test-csrf-token',
+        ]);
+
+        $this->assertStringContainsString('data-admin="1"', $html);
+        $this->assertStringContainsString('data-wall-max="50"', $html);
+        $this->assertStringContainsString('data-csrf="test-csrf-token"', $html);
+        $this->assertStringContainsString('wall-delete', $html);
+        $this->assertStringContainsString('name="next" value="/add"', $html);
+        $this->assertStringContainsString('recent sprays (admin)', $html);
+    }
+
+    public function test_add_view_public_wall_hides_delete_controls(): void
+    {
+        $html = render_add([
+            'recent' => [['id' => 42, 'body' => 'hello painted world!!', 'color' => 'red', 'bold' => false, 'flagged' => true, 'created_at' => 'x']],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'isAdmin' => false,
+            'csrfToken' => '',
+        ]);
+
+        $this->assertStringNotContainsString('data-admin=', $html);
+        $this->assertStringContainsString('data-wall-max="10"', $html);
+        $this->assertStringNotContainsString('wall-delete', $html);
+        $this->assertStringNotContainsString('flag-badge', $html);
+        $this->assertStringNotContainsString('wall-approve', $html);
+    }
+
+    public function test_add_view_admin_shows_flag_badge_and_approve(): void
+    {
+        $html = render_add([
+            'recent' => [['id' => 7, 'body' => 'Hello world!!!!!!!!!!', 'color' => 'red', 'bold' => false, 'flagged' => true, 'created_at' => 'x']],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'isAdmin' => true,
+            'csrfToken' => 'csrf',
+        ]);
+
+        $this->assertStringContainsString('flag-badge', $html);
+        $this->assertStringContainsString('wall-approve', $html);
+        $this->assertStringContainsString('name="approve"', $html);
+        $this->assertStringContainsString('is-flagged', $html);
+    }
+
+    public function test_add_view_owner_sees_delete_for_owned_only(): void
+    {
+        $html = render_add([
+            'recent' => [
+                ['id' => 10, 'body' => 'my own spray on the wall!!', 'color' => 'red', 'bold' => false, 'created_at' => 'x'],
+                ['id' => 11, 'body' => 'someone else sprayed this!!', 'color' => 'cyan', 'bold' => false, 'created_at' => 'y'],
+            ],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'isAdmin' => false,
+            'ownedIds' => [10],
+            'csrfToken' => 'csrf',
+        ]);
+
+        $this->assertStringContainsString('data-owned="10"', $html);
+        $this->assertStringContainsString('action="/delete"', $html);
+        $this->assertSame(1, substr_count($html, 'class="wall-delete"'));
+        $this->assertStringContainsString('name="id" value="10"', $html);
+        $this->assertStringNotContainsString('name="id" value="11"', $html);
+    }
 }

@@ -24,7 +24,13 @@ final class RandomHandler
             $body = 'The wall is blank. Be the first: ' . rtrim($this->baseUrl, '/') . '/add';
             return Response::plain($body);
         }
-        $body = Color::wrapPlain($row['body'], $row['color'], $row['bold'], $request->colorEnabled());
+        $body = Color::wrapMessage(
+            $row['body'],
+            $row['color'],
+            $row['bold'],
+            $row['spans'],
+            $request->colorEnabled(),
+        );
         return Response::plain($body);
     }
 }

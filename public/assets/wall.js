@@ -3,10 +3,18 @@
 
   var POLL_MS = 10000;
   var MIN_POLL_GAP_MS = 2000;
-  var MAX = 10;
+  var wall = document.querySelector('.wall');
   var grid = document.querySelector('.wall-grid');
   var empty = document.querySelector('.wall-empty');
-  if (!grid || !empty) return;
+  if (!wall || !grid || !empty) return;
+
+  var MAX = parseInt(wall.getAttribute('data-wall-max') || '10', 10) || 10;
+  var isAdmin = wall.getAttribute('data-admin') === '1';
+  var csrfToken = wall.getAttribute('data-csrf') || '';
+  var ownedIds = (wall.getAttribute('data-owned') || '')
+    .split(',')
+    .map(function (s) { return parseInt(s, 10); })
+    .filter(function (n) { return n > 0; });
 
   var inFlight = false;
   var lastPollAt = 0;
@@ -26,22 +34,85 @@
     return c;
   }
 
+  function renderBody(msg) {
+    var spans = msg.spans;
+    if (Array.isArray(spans) && spans.length > 0) {
+      var perRunBold = spans.some(function (run) {
+        return Object.prototype.hasOwnProperty.call(run, 'b');
+      });
+      return spans.map(function (run) {
+        var runBold = perRunBold ? !!run.b : !!msg.bold;
+        return (
+          '<span class="' +
+          escapeHtml(cssClass(run.c, runBold)) +
+          '">' +
+          escapeHtml(run.t) +
+          '</span>'
+        );
+      }).join('');
+    }
+    return escapeHtml(msg.body);
+  }
+
+  function outerClass(msg) {
+    var spans = msg.spans;
+    if (Array.isArray(spans) && spans.length > 0) {
+      return '';
+    }
+    return cssClass(msg.color, !!msg.bold);
+  }
+
+  function canDelete(id) {
+    if (isAdmin) return true;
+    return ownedIds.indexOf(Number(id)) !== -1;
+  }
+
+  function adminActionsHtml(msg) {
+    if (!csrfToken || !canDelete(msg.id)) return '';
+    var id = escapeHtml(String(msg.id));
+    var html = '';
+    if (isAdmin && msg.flagged) {
+      html +=
+        '<span class="flag-badge" title="Flagged as low-effort or test">flagged</span>' +
+        '<form class="wall-approve" method="post" action="/admin">' +
+        '<input type="hidden" name="csrf_token" value="' + escapeHtml(csrfToken) + '">' +
+        '<input type="hidden" name="id" value="' + id + '">' +
+        '<input type="hidden" name="approve" value="1">' +
+        '<input type="hidden" name="next" value="/add">' +
+        '<button type="submit" class="wall-approve-btn" title="Clear flag">approve</button>' +
+        '</form>';
+    }
+    html +=
+      '<form class="wall-delete" method="post" action="' + (isAdmin ? '/admin' : '/delete') + '">' +
+      '<input type="hidden" name="csrf_token" value="' + escapeHtml(csrfToken) + '">' +
+      '<input type="hidden" name="id" value="' + id + '">' +
+      '<input type="hidden" name="next" value="/add">' +
+      '<button type="submit" class="wall-delete-btn" title="' +
+      (isAdmin ? 'Delete this spray' : 'Delete your spray') +
+      '">delete</button>' +
+      '</form>';
+    return html;
+  }
+
   function buildFrame(msg) {
     var el = document.createElement('div');
-    el.className = 'terminal terminal-enter';
+    el.className = 'terminal terminal-enter' + (isAdmin && msg.flagged ? ' is-flagged' : '');
     el.setAttribute('data-id', String(msg.id));
+    if (msg.flagged) el.setAttribute('data-flagged', '1');
     el.addEventListener('animationend', function () {
       el.classList.remove('terminal-enter');
     }, { once: true });
+    var outer = outerClass(msg);
     el.innerHTML =
       '<div class="terminal-bar">' +
       '<span class="terminal-dot terminal-dot-red"></span>' +
       '<span class="terminal-dot terminal-dot-yellow"></span>' +
       '<span class="terminal-dot terminal-dot-green"></span>' +
       '<span class="terminal-title">msg #' + escapeHtml(String(msg.id)) + '</span>' +
+      adminActionsHtml(msg) +
       '</div>' +
-      '<pre class="terminal-body ' + escapeHtml(cssClass(msg.color, !!msg.bold)) + '">' +
-      escapeHtml(msg.body) +
+      '<pre class="terminal-body' + (outer ? ' ' + escapeHtml(outer) : '') + '">' +
+      renderBody(msg) +
       '</pre>';
     return el;
   }
@@ -99,7 +170,6 @@
       });
     }
 
-    // Cap (server already <=10; safety)
     while (grid.querySelectorAll('.terminal').length > MAX) {
       var last = grid.querySelector('.terminal:last-child');
       if (!last) break;

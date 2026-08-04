@@ -10,6 +10,8 @@ interface SessionBag
 
     public function set(string $key, mixed $value): void;
 
+    public function unset(string $key): void;
+
     public function isAdmin(): bool;
 
     /** Returns the per-session CSRF token, generating one on first use. */
@@ -32,6 +34,11 @@ final class ArraySession implements SessionBag
     public function set(string $key, mixed $value): void
     {
         $this->values[$key] = $value;
+    }
+
+    public function unset(string $key): void
+    {
+        unset($this->values[$key]);
     }
 
     public function isAdmin(): bool
@@ -66,6 +73,11 @@ final class PhpSession implements SessionBag
     public function set(string $key, mixed $value): void
     {
         $_SESSION[$key] = $value;
+    }
+
+    public function unset(string $key): void
+    {
+        unset($_SESSION[$key]);
     }
 
     public function isAdmin(): bool

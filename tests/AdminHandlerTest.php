@@ -111,6 +111,47 @@ final class AdminHandlerTest extends TestCase
         $this->assertSame([], $this->repo->allNewestFirst());
     }
 
+    public function test_delete_can_redirect_back_to_wall(): void
+    {
+        $id = $this->repo->create('delete me please!!', 'red', false, 'ip-hash');
+        $this->session->set('admin', 1);
+        $csrfToken = $this->session->csrfToken();
+
+        $delete = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            ['id' => (string) $id, 'csrf_token' => $csrfToken, 'next' => '/add'],
+            '1.1.1.1',
+        ));
+
+        $this->assertSame(302, $delete->status);
+        $this->assertSame('/add', $delete->headers['Location']);
+        $this->assertSame([], $this->repo->allNewestFirst());
+    }
+
+    public function test_delete_rejects_open_redirect_next(): void
+    {
+        $id = $this->repo->create('keep redirect safe!!', 'red', false, 'ip-hash');
+        $this->session->set('admin', 1);
+        $csrfToken = $this->session->csrfToken();
+
+        $delete = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            ['id' => (string) $id, 'csrf_token' => $csrfToken, 'next' => '//evil.example'],
+            '1.1.1.1',
+        ));
+
+        $this->assertSame(302, $delete->status);
+        $this->assertSame('/admin', $delete->headers['Location']);
+    }
+
     public function test_delete_post_without_valid_csrf_token_is_rejected(): void
     {
         $id = $this->repo->create('keep me', 'red', false, 'ip-hash');
@@ -166,5 +207,135 @@ final class AdminHandlerTest extends TestCase
         $this->assertStringContainsString('&lt;script&gt;', $response->body);
         $this->assertStringNotContainsString('secret-ip-hash', $response->body);
         $this->assertStringContainsString('name="id"', $response->body);
+        $this->assertStringContainsString('/assets/style.css?v=', $response->body);
+        $this->assertStringContainsString('admin-panel', $response->body);
+        $this->assertStringContainsString('name="logout"', $response->body);
+    }
+
+    public function test_logout_clears_admin_session(): void
+    {
+        $this->session->set('admin', 1);
+        $csrfToken = $this->session->csrfToken();
+
+        $response = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            ['logout' => '1', 'csrf_token' => $csrfToken],
+            '1.1.1.1',
+        ));
+
+        $this->assertSame(302, $response->status);
+        $this->assertSame('/admin', $response->headers['Location']);
+        $this->assertFalse($this->session->isAdmin());
+    }
+
+    public function test_approve_clears_flag_and_flagged_filter(): void
+    {
+        $flaggedId = $this->repo->create('Hello world!!!!!!!!!!', 'red', false, 'ip', null, true);
+        $this->repo->create('a thoughtful line about midnight trains', 'cyan', false, 'ip2', null, false);
+        $this->session->set('admin', 1);
+
+        $filtered = $this->handler->handle(new Request(
+            'GET',
+            '/admin',
+            ['flagged' => '1'],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            [],
+            '1.1.1.1',
+        ));
+        $this->assertSame(200, $filtered->status);
+        $this->assertStringContainsString('flagged sprays', $filtered->body);
+        $this->assertStringContainsString('Hello world!!!!!!!!!!', $filtered->body);
+        $this->assertStringNotContainsString('midnight trains', $filtered->body);
+
+        $csrfToken = $this->session->csrfToken();
+        $approve = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            [
+                'id' => (string) $flaggedId,
+                'approve' => '1',
+                'csrf_token' => $csrfToken,
+                'next' => '/admin?flagged=1',
+            ],
+            '1.1.1.1',
+        ));
+        $this->assertSame(302, $approve->status);
+        $this->assertSame('/admin?flagged=1', $approve->headers['Location']);
+        $this->assertSame([], $this->repo->allNewestFirst(true));
+    }
+
+    public function test_batch_approve_and_delete_selected_ids(): void
+    {
+        $a = $this->repo->create('Hello world!!!!!!!!!!', 'red', false, 'ip', null, true);
+        $b = $this->repo->create('testing testing testing!!', 'red', false, 'ip2', null, true);
+        $c = $this->repo->create('a thoughtful line about midnight trains', 'cyan', false, 'ip3', null, false);
+        $this->session->set('admin', 1);
+        $csrfToken = $this->session->csrfToken();
+
+        $approve = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            [
+                'ids' => [(string) $a, (string) $b],
+                'batch_approve' => '1',
+                'csrf_token' => $csrfToken,
+                'next' => '/admin?flagged=1',
+            ],
+            '1.1.1.1',
+        ));
+        $this->assertSame(302, $approve->status);
+        $this->assertSame([], $this->repo->allNewestFirst(true));
+
+        $delete = $this->handler->handle(new Request(
+            'POST',
+            '/admin',
+            [],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            [
+                'ids' => [(string) $a, (string) $c],
+                'batch_delete' => '1',
+                'csrf_token' => $this->session->csrfToken(),
+                'next' => '/admin',
+            ],
+            '1.1.1.1',
+        ));
+        $this->assertSame(302, $delete->status);
+        $remaining = $this->repo->allNewestFirst();
+        $this->assertCount(1, $remaining);
+        $this->assertSame($b, $remaining[0]['id']);
+    }
+
+    public function test_admin_list_includes_batch_controls(): void
+    {
+        $this->repo->create('Hello world!!!!!!!!!!', 'red', false, 'ip', null, true);
+        $this->session->set('admin', 1);
+
+        $response = $this->handler->handle(new Request(
+            'GET',
+            '/admin',
+            ['flagged' => '1'],
+            ['HTTP_ACCEPT' => 'text/html'],
+            '',
+            [],
+            '1.1.1.1',
+        ));
+
+        $this->assertStringContainsString('id="admin-select-all"', $response->body);
+        $this->assertStringContainsString('name="ids[]"', $response->body);
+        $this->assertStringContainsString('name="batch_approve"', $response->body);
+        $this->assertStringContainsString('name="batch_delete"', $response->body);
+        $this->assertStringContainsString('/assets/admin.js', $response->body);
     }
 }

@@ -5,11 +5,18 @@ declare(strict_types=1);
 use Graffiti\Color;
 
 /**
- * @var list<array{id:int,body:string,color:string,bold:bool,created_at:string}> $recent
+ * @var list<array{id:int,body:string,color:string,bold:bool,spans:?list<array{t:string,c:string}>,created_at:string}> $recent
  * @var bool $ok
  * @var string|null $error
  * @var list<string> $colors
+ * @var bool $isAdmin
+ * @var list<int> $ownedIds
+ * @var string $csrfToken
  */
+$isAdmin = $isAdmin ?? false;
+$ownedIds = $ownedIds ?? [];
+$csrfToken = $csrfToken ?? '';
+$ownedLookup = array_fill_keys($ownedIds, true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,7 +27,7 @@ use Graffiti\Color;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?= e(asset_url('/assets/style.css')) ?>">
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 </head>
 <body>
@@ -34,10 +41,10 @@ use Graffiti\Color;
   <?php if ($ok): ?>
     <p class="flash flash-ok">sprayed. it&rsquo;s on the wall below.</p>
   <?php elseif ($error !== null && $error !== ''): ?>
-    <p class="flash flash-error">couldn&rsquo;t spray that &mdash; too long, empty, or you&rsquo;re going too fast. try again.</p>
+    <p class="flash flash-error">couldn&rsquo;t spray that &mdash; too short, too long, empty, or you&rsquo;re going too fast. try again.</p>
   <?php endif; ?>
 
-  <form class="compose" method="post" action="/add">
+  <form class="compose" method="post" action="/add" id="compose-form">
     <label class="compose-label" for="body">your message</label>
     <textarea
       id="body"
@@ -47,10 +54,12 @@ use Graffiti\Color;
       required
       placeholder="spray something... multi-line + ascii art welcome"
     ></textarea>
+    <pre id="paint-surface" class="paint-surface mono" hidden aria-hidden="true"></pre>
+    <input type="hidden" name="spans" id="spans" value="">
     <p id="char-count" class="char-count" aria-live="polite">0 / 1000</p>
 
-    <div class="controls">
-      <fieldset class="palette">
+    <div class="palette-row">
+      <fieldset id="color-palette" class="palette">
         <legend>color</legend>
         <?php foreach ($colors as $colorOption): ?>
           <label class="swatch <?= e(Color::cssClass($colorOption, false)) ?>">
@@ -65,12 +74,44 @@ use Graffiti\Color;
         <?php endforeach; ?>
       </fieldset>
 
+      <fieldset id="brush-palette" class="palette brush-palette" hidden>
+        <legend>brush</legend>
+        <?php foreach ($colors as $colorOption): ?>
+          <label class="swatch <?= e(Color::cssClass($colorOption, false)) ?>">
+            <input
+              type="radio"
+              name="brush"
+              value="<?= e($colorOption) ?>"
+              <?= $colorOption === 'red' ? 'checked' : '' ?>
+            >
+            <span><?= e($colorOption) ?></span>
+          </label>
+        <?php endforeach; ?>
+      </fieldset>
+
+      <button
+        type="button"
+        id="paint-toggle"
+        class="paint-toggle"
+        aria-pressed="false"
+        title="Paint mode"
+        aria-label="Toggle paint mode"
+      >
+        <img src="/assets/favicon.png" alt="" width="22" height="22" class="paint-toggle-icon">
+      </button>
+    </div>
+
+    <p id="compose-hint" class="paint-hint">Enter your graffiti above. 20 character minimum, 1000 character maximum.</p>
+    <p id="paint-hint" class="paint-hint" hidden>Choose a color and optional bold, then drag a rectangle to paint — bold is part of the brush</p>
+
+    <div class="controls" id="compose-actions">
       <label class="bold-toggle">
-        <input type="checkbox" name="bold" value="1">
+        <input type="checkbox" name="bold" value="1" id="bold-toggle">
         <span>bold</span>
       </label>
 
-      <button type="submit" class="spray-btn">spray it</button>
+      <button type="submit" class="spray-btn" id="spray-simple" disabled>spray it</button>
+      <button type="submit" class="spray-btn" id="spray-paint" hidden disabled>spray it</button>
     </div>
 
     <div class="honeypot">
@@ -81,19 +122,55 @@ use Graffiti\Color;
 
   <p class="compose-notice">No language filter. Posts are anonymous. Don&rsquo;t spray hate or porn &mdash; it gets wiped.</p>
 
-  <section class="wall">
-    <h2 class="wall-title">recent sprays</h2>
+  <section
+    class="wall"
+    data-wall-max="<?= $isAdmin ? '50' : '10' ?>"
+    <?php if ($isAdmin): ?>
+      data-admin="1"
+    <?php endif; ?>
+    <?php if ($csrfToken !== ''): ?>
+      data-csrf="<?= e($csrfToken) ?>"
+    <?php endif; ?>
+    <?php if ($ownedIds !== []): ?>
+      data-owned="<?= e(implode(',', array_map('strval', $ownedIds))) ?>"
+    <?php endif; ?>
+  >
+    <h2 class="wall-title"><?= $isAdmin ? 'recent sprays (admin)' : 'recent sprays' ?></h2>
     <p class="wall-empty"<?= $recent === [] ? '' : ' hidden' ?>>the wall is blank. be the first.</p>
     <div class="wall-grid">
       <?php foreach ($recent as $message): ?>
-        <div class="terminal" data-id="<?= e((string) $message['id']) ?>">
+        <?php
+          $spans = $message['spans'] ?? null;
+          $outerClass = Color::outerCssClass($message['color'], $message['bold'], $spans);
+          $canDelete = $isAdmin || isset($ownedLookup[$message['id']]);
+          $deleteAction = $isAdmin ? '/admin' : '/delete';
+        ?>
+        <div class="terminal<?= !empty($message['flagged']) && $isAdmin ? ' is-flagged' : '' ?>" data-id="<?= e((string) $message['id']) ?>"<?= !empty($message['flagged']) ? ' data-flagged="1"' : '' ?>>
           <div class="terminal-bar">
             <span class="terminal-dot terminal-dot-red"></span>
             <span class="terminal-dot terminal-dot-yellow"></span>
             <span class="terminal-dot terminal-dot-green"></span>
             <span class="terminal-title">msg #<?= e((string) $message['id']) ?></span>
+            <?php if ($isAdmin && !empty($message['flagged'])): ?>
+              <span class="flag-badge" title="Flagged as low-effort or test">flagged</span>
+              <form class="wall-approve" method="post" action="/admin">
+                <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                <input type="hidden" name="id" value="<?= e((string) $message['id']) ?>">
+                <input type="hidden" name="approve" value="1">
+                <input type="hidden" name="next" value="/add">
+                <button type="submit" class="wall-approve-btn" title="Clear flag">approve</button>
+              </form>
+            <?php endif; ?>
+            <?php if ($canDelete): ?>
+              <form class="wall-delete" method="post" action="<?= e($deleteAction) ?>">
+                <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                <input type="hidden" name="id" value="<?= e((string) $message['id']) ?>">
+                <input type="hidden" name="next" value="/add">
+                <button type="submit" class="wall-delete-btn" title="<?= $isAdmin ? 'Delete this spray' : 'Delete your spray' ?>">delete</button>
+              </form>
+            <?php endif; ?>
           </div>
-          <pre class="terminal-body <?= e(Color::cssClass($message['color'], $message['bold'])) ?>"><?= e($message['body']) ?></pre>
+          <pre class="terminal-body<?= $outerClass !== '' ? ' ' . e($outerClass) : '' ?>"><?= Color::renderHtmlBody($message['body'], $message['color'], $message['bold'], $spans) ?></pre>
         </div>
       <?php endforeach; ?>
     </div>
@@ -115,7 +192,7 @@ brew install graffiti</code></pre>
   </section>
 
 </div>
-<script src="/assets/compose.js" defer></script>
-<script src="/assets/wall.js" defer></script>
+<script src="<?= e(asset_url('/assets/compose.js')) ?>" defer></script>
+<script src="<?= e(asset_url('/assets/wall.js')) ?>" defer></script>
 </body>
 </html>

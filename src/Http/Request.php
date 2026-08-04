@@ -104,7 +104,7 @@ final class Request
         $headers = [];
 
         foreach ($server as $name => $value) {
-            if (!is_string($value)) {
+            if (!is_string($name) || !is_string($value)) {
                 continue;
             }
 

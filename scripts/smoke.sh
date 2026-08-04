@@ -48,14 +48,14 @@ done
 blank="$(curl --silent --fail "http://127.0.0.1:$port/random")"
 [[ "$blank" == *"The wall is blank"* ]]
 
-sprayed="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall&color=cyan' "http://127.0.0.1:$port/add")"
+sprayed="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall%20again%20now&color=cyan' "http://127.0.0.1:$port/add")"
 [[ "$sprayed" == "Sprayed." ]]
 
-sprayed_trailing="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall&color=cyan' "http://127.0.0.1:$port/add/")"
+sprayed_trailing="$(curl --silent --fail --request POST --header 'Accept: text/plain' --data 'body=hello%20wall%20again%20now&color=cyan' "http://127.0.0.1:$port/add/")"
 [[ "$sprayed_trailing" == "Sprayed." ]]
 
 random="$(curl --silent --fail "http://127.0.0.1:$port/random")"
-[[ "$random" == "hello wall" ]]
+[[ "$random" == "hello wall again now" ]]
 
 root_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --header 'Accept: text/html' --header 'User-Agent: Mozilla/5.0' "http://127.0.0.1:$port/")"
 [[ "$root_status" == "302" ]]

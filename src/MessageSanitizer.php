@@ -8,6 +8,7 @@ use InvalidArgumentException;
 
 final class MessageSanitizer
 {
+    public const MIN_LENGTH = 20;
     public const MAX_LENGTH = 1000;
 
     /** @var list<string> */
@@ -23,8 +24,12 @@ final class MessageSanitizer
             throw new InvalidArgumentException('Message is empty');
         }
         $result = trim($text, "\n");
-        if (mb_strlen($result, 'UTF-8') > self::MAX_LENGTH) {
-            throw new InvalidArgumentException('Message exceeds 1000 characters');
+        $length = mb_strlen($result, 'UTF-8');
+        if ($length < self::MIN_LENGTH) {
+            throw new InvalidArgumentException('Message is shorter than ' . self::MIN_LENGTH . ' characters');
+        }
+        if ($length > self::MAX_LENGTH) {
+            throw new InvalidArgumentException('Message exceeds ' . self::MAX_LENGTH . ' characters');
         }
         return $result;
     }
@@ -45,5 +50,75 @@ final class MessageSanitizer
         }
         $value = strtolower(trim((string) $bold));
         return in_array($value, ['1', 'true', 'on', 'yes'], true);
+    }
+
+    /**
+     * Validate painted runs. Returns null when absent, invalid, or trivially uniform.
+     *
+     * @return list<array{t:string,c:string,b?:bool}>|null
+     */
+    public static function normalizeSpans(string $body, mixed $raw): ?array
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (!is_array($decoded)) {
+                return null;
+            }
+            $raw = $decoded;
+        }
+
+        if (!is_array($raw) || $raw === []) {
+            return null;
+        }
+
+        $runs = [];
+        $concat = '';
+        foreach ($raw as $item) {
+            if (!is_array($item)) {
+                return null;
+            }
+            $text = $item['t'] ?? null;
+            $color = $item['c'] ?? null;
+            if (!is_string($text) || $text === '' || !is_string($color)) {
+                return null;
+            }
+            $color = strtolower(trim($color));
+            if (!in_array($color, self::COLORS, true)) {
+                return null;
+            }
+            $bold = self::normalizeBold($item['b'] ?? false);
+
+            // Merge adjacent same color+bold runs
+            $last = $runs === [] ? null : count($runs) - 1;
+            if (
+                $last !== null
+                && $runs[$last]['c'] === $color
+                && (($runs[$last]['b'] ?? false) === $bold)
+            ) {
+                $runs[$last]['t'] .= $text;
+            } else {
+                $run = ['t' => $text, 'c' => $color];
+                if ($bold) {
+                    $run['b'] = true;
+                }
+                $runs[] = $run;
+            }
+            $concat .= $text;
+        }
+
+        if ($concat !== $body) {
+            return null;
+        }
+
+        // Trivial: one uniform run — store as message-level color/bold instead
+        if (count($runs) <= 1) {
+            return null;
+        }
+
+        return $runs;
     }
 }

@@ -37,6 +37,8 @@ try {
 
     $request = \Graffiti\Http\Request::fromGlobals();
     $repo = new \Graffiti\MessageRepository(\Graffiti\Database::connect($config['db_path']));
+    $session = new \Graffiti\PhpSession();
+    $owned = new \Graffiti\OwnedMessages($session);
 
     if ($request->method === 'GET' && $request->path === '/') {
         $response = $request->isBrowser()
@@ -53,24 +55,35 @@ try {
                 $config['rate_limit_window_seconds'],
             ),
             $config['ip_hash_secret'],
+            $session,
+            $owned,
             'render_add',
         ))->handle($request);
+    } elseif ($request->method === 'POST' && $request->path === '/delete') {
+        $response = (new \Graffiti\Handlers\DeleteHandler($repo, $session, $owned))->handle($request);
     } elseif (in_array($request->method, ['GET', 'POST'], true) && $request->path === '/admin') {
         $response = (new \Graffiti\Handlers\AdminHandler(
             $repo,
             $config['admin_password'],
-            new \Graffiti\PhpSession(),
+            $session,
             'render_admin',
             'render_admin_login',
         ))->handle($request);
     } elseif ($request->method === 'GET' && $request->path === '/recent') {
-        $response = (new \Graffiti\Handlers\RecentHandler($repo))->handle($request);
+        $response = (new \Graffiti\Handlers\RecentHandler($repo, $session))->handle($request);
+    } elseif ($request->method === 'GET' && $request->path === '/flagged') {
+        $response = (new \Graffiti\Handlers\FlaggedCountHandler(
+            $repo,
+            $config['admin_password'],
+            $session,
+        ))->handle($request);
     } else {
         $response = $request->isBrowser()
             ? \Graffiti\Http\Response::html('<h1>Not found.</h1>', 404)
             : \Graffiti\Http\Response::plain('Not found.', 404);
     }
-} catch (\Throwable) {
+} catch (\Throwable $e) {
+    error_log('graffiti error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     $response = \Graffiti\Http\Response::plain('Something went wrong.', 500);
 }
 

@@ -8,16 +8,24 @@ use Graffiti\Http\Request;
 use Graffiti\Http\Response;
 use Graffiti\MessageRepository;
 use Graffiti\MessageSanitizer;
+use Graffiti\MessageQuality;
+use Graffiti\OwnedMessages;
 use Graffiti\RateLimiter;
+use Graffiti\SessionBag;
 use InvalidArgumentException;
 
 final class AddHandler
 {
+    public const PUBLIC_RECENT_LIMIT = 10;
+    public const ADMIN_RECENT_LIMIT = 50;
+
     /** @param callable(array<string, mixed>): string $renderAddPage */
     public function __construct(
         private MessageRepository $repo,
         private RateLimiter $limiter,
         private string $ipSecret,
+        private SessionBag $session,
+        private OwnedMessages $owned,
         private $renderAddPage,
     ) {
     }
@@ -25,11 +33,18 @@ final class AddHandler
     public function handle(Request $request): Response
     {
         if ($request->method === 'GET') {
+            $isAdmin = $this->session->isAdmin();
+            $ownedIds = $this->owned->idList();
             return Response::html(($this->renderAddPage)([
-                'recent' => $this->repo->recent(10),
+                'recent' => $this->repo->recent(
+                    $isAdmin ? self::ADMIN_RECENT_LIMIT : self::PUBLIC_RECENT_LIMIT
+                ),
                 'ok' => ($request->query['ok'] ?? null) === '1',
                 'error' => $request->query['error'] ?? null,
                 'colors' => MessageSanitizer::COLORS,
+                'isAdmin' => $isAdmin,
+                'ownedIds' => $ownedIds,
+                'csrfToken' => ($isAdmin || $ownedIds !== []) ? $this->session->csrfToken() : '',
             ]));
         }
 
@@ -48,12 +63,23 @@ final class AddHandler
             return $this->errorResponse($request, 429, 'Slow down.');
         }
 
-        $this->repo->create(
+        $spans = MessageSanitizer::normalizeSpans($body, $this->valueFrom($request, 'spans'));
+        $color = MessageSanitizer::normalizeColor($this->valueFrom($request, 'color'));
+        $bold = MessageSanitizer::normalizeBold($this->valueFrom($request, 'bold'));
+        if ($spans !== null) {
+            $color = $spans[0]['c'];
+            $bold = !empty($spans[0]['b']);
+        }
+
+        $id = $this->repo->create(
             $body,
-            MessageSanitizer::normalizeColor($this->valueFrom($request, 'color')),
-            MessageSanitizer::normalizeBold($this->valueFrom($request, 'bold')),
+            $color,
+            $bold,
             $ipHash,
+            $spans,
+            MessageQuality::shouldFlag($body),
         );
+        $this->owned->remember($id);
 
         return $this->successResponse($request);
     }

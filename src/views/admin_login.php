@@ -11,20 +11,32 @@ declare(strict_types=1);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>graffiti.moe admin login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="<?= e(asset_url('/assets/style.css')) ?>">
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 </head>
 <body>
-<main>
-  <h1>Admin login</h1>
-  <?php if ($error !== null): ?>
-    <p role="alert"><?= e($error) ?></p>
-  <?php endif; ?>
-  <form method="post" action="/admin">
+<div class="page admin-page">
+  <header class="hero">
+    <h1 class="brand">graffiti<span class="brand-dot">.</span>moe</h1>
+    <p class="tagline">admin login</p>
+  </header>
+
+  <form class="compose admin-login" method="post" action="/admin">
+    <?php if ($error !== null): ?>
+      <p class="flash flash-error" role="alert"><?= e($error) ?></p>
+    <?php endif; ?>
     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" required>
-    <button type="submit">Log in</button>
+    <label class="compose-label" for="password">password</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+    <div class="controls">
+      <button type="submit" class="spray-btn">log in</button>
+    </div>
   </form>
-</main>
+
+  <p class="compose-notice"><a href="/add">back to the wall</a></p>
+</div>
 </body>
 </html>

@@ -47,10 +47,10 @@ done
 
 export GRAFFITI_URL="http://127.0.0.1:$port"
 
-sprayed="$(./cli/graffiti spraypaint --color cyan --bold $'hi\nart')"
+sprayed="$(./cli/graffiti spraypaint --color cyan --bold $'hi there graffiti wall')"
 [[ "$sprayed" == "Sprayed." ]]
 
 random="$(./cli/graffiti --color=never)"
-[[ "$random" == $'hi\nart' ]]
+[[ "$random" == $'hi there graffiti wall' ]]
 
 echo "CLI smoke test passed."

@@ -25,12 +25,43 @@ final class Database
                 body TEXT NOT NULL,
                 color TEXT NOT NULL DEFAULT \'default\',
                 bold INTEGER NOT NULL DEFAULT 0,
+                spans TEXT,
+                flagged INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 ip_hash TEXT NOT NULL
             );'
         );
+        self::ensureSpansColumn($pdo);
+        self::ensureFlaggedColumn($pdo);
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_messages_ip_created ON messages(ip_hash, created_at);');
         return $pdo;
+    }
+
+    private static function ensureSpansColumn(PDO $pdo): void
+    {
+        if (self::hasColumn($pdo, 'spans')) {
+            return;
+        }
+        $pdo->exec('ALTER TABLE messages ADD COLUMN spans TEXT');
+    }
+
+    private static function ensureFlaggedColumn(PDO $pdo): void
+    {
+        if (self::hasColumn($pdo, 'flagged')) {
+            return;
+        }
+        $pdo->exec('ALTER TABLE messages ADD COLUMN flagged INTEGER NOT NULL DEFAULT 0');
+    }
+
+    private static function hasColumn(PDO $pdo, string $name): bool
+    {
+        $columns = $pdo->query('PRAGMA table_info(messages)')->fetchAll();
+        foreach ($columns as $column) {
+            if (($column['name'] ?? '') === $name) {
+                return true;
+            }
+        }
+        return false;
     }
 }

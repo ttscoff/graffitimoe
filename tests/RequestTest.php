@@ -99,6 +99,8 @@ final class RequestTest extends TestCase
                 'HTTP_ACCEPT' => '*/*',
                 'HTTP_X_REQUEST_ID' => 'abc123',
                 'REMOTE_ADDR' => '5.6.7.8',
+                // PHP-FPM/Apache can inject integer keys into $_SERVER
+                6 => 'unexpected',
             ];
             $_GET = ['color' => 'always'];
             $_POST = ['message' => 'Hello'];

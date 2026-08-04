@@ -26,7 +26,7 @@ Post a message (plain-text response):
 ```bash
 curl -X POST https://graffiti.moe/add \
   -H 'Accept: text/plain' \
-  --data-urlencode 'body=hello wall' \
+  --data-urlencode 'body=hello wall again now' \
   --data-urlencode 'color=cyan' \
   --data-urlencode 'bold=1'
 ```
@@ -87,14 +87,29 @@ Smoke tests (start nothing yourself; scripts spin up a temporary server):
 
 ## Admin
 
-Visit `/admin` and sign in with the password from `config/config.php`. The admin UI lists messages newest-first and supports hard delete. Sessions use the configured `session_name`.
+Visit `/admin` and sign in with the password from `config/config.php`. The admin UI lists messages newest-first and supports hard delete, flagging filters, and batch approve/delete. Sessions use the configured `session_name`.
+
+Flagged-count API for widgets (admin session, or password via header):
+
+```bash
+# plain count (handy for terminal widgets)
+curl -sS -H "Authorization: Bearer YOUR_ADMIN_PASSWORD" https://graffiti.moe/flagged
+
+# JSON
+curl -sS -H "Authorization: Bearer YOUR_ADMIN_PASSWORD" \
+  -H "Accept: application/json" \
+  https://graffiti.moe/flagged
+# => {"flagged":3}
+```
+
+You can also send `X-Admin-Password: YOUR_ADMIN_PASSWORD` instead of Bearer.
 
 ## Security
 
 graffiti.moe is designed for safe terminal output:
 
 - **No raw ANSI from users.** Submitters pick a palette key (`default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`); the server emits escape codes only when `?color=always` is set on `/` or `/random`.
-- **Control-character stripping.** Bodies are sanitized on write: ESC and other control bytes are removed (newlines preserved); max 1000 characters after trim.
+- **Control-character stripping.** Bodies are sanitized on write: ESC and other control bytes are removed (newlines preserved); 20–1000 characters after trim.
 - **Rate limiting.** POST `/add` is limited per hashed IP (see config).
 - **Honeypot.** The HTML form includes a hidden `website` field; bots that fill it are rejected quietly.
 - **Secrets outside the web root.** Keep `config/config.php` and the SQLite file under `data/` out of the public docroot in production (see [docs/deploy-dreamhost.md](docs/deploy-dreamhost.md)).
