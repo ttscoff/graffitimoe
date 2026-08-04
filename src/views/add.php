@@ -156,6 +156,16 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
             <span class="terminal-dot terminal-dot-yellow"></span>
             <span class="terminal-dot terminal-dot-green"></span>
             <span class="terminal-title">msg #<?= e((string) $message['id']) ?></span>
+            <form class="wall-flag" method="post" action="/flag">
+              <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+              <input type="hidden" name="id" value="<?= e((string) $message['id']) ?>">
+              <input type="hidden" name="next" value="/add">
+              <button
+                type="submit"
+                class="wall-flag-btn<?= $flaggedByMe ? ' is-flagged-by-me' : '' ?>"
+                title="<?= $flaggedByMe ? 'Remove your flag' : 'Flag this spray' ?>"
+              >flag</button>
+            </form>
             <?php if ($isAdmin && !empty($message['flagged'])): ?>
               <span class="flag-badge" title="Flagged as low-effort or test">flagged</span>
               <form class="wall-approve" method="post" action="/admin">
@@ -174,16 +184,6 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
                 <button type="submit" class="wall-delete-btn" title="<?= $isAdmin ? 'Delete this spray' : 'Delete your spray' ?>">delete</button>
               </form>
             <?php endif; ?>
-            <form class="wall-flag" method="post" action="/flag">
-              <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
-              <input type="hidden" name="id" value="<?= e((string) $message['id']) ?>">
-              <input type="hidden" name="next" value="/add">
-              <button
-                type="submit"
-                class="wall-flag-btn<?= $flaggedByMe ? ' is-flagged-by-me' : '' ?>"
-                title="<?= $flaggedByMe ? 'Remove your flag' : 'Flag this spray' ?>"
-              >flag</button>
-            </form>
           </div>
           <pre class="terminal-body<?= $outerClass !== '' ? ' ' . e($outerClass) : '' ?>"><?= Color::renderHtmlBody($message['body'], $message['color'], $message['bold'], $spans) ?></pre>
         </div>
