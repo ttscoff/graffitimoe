@@ -39,6 +39,7 @@ try {
     $repo = new \Graffiti\MessageRepository(\Graffiti\Database::connect($config['db_path']));
     $session = new \Graffiti\PhpSession();
     $owned = new \Graffiti\OwnedMessages($session);
+    $flagged = new \Graffiti\FlaggedMessages($session);
 
     if ($request->method === 'GET' && $request->path === '/') {
         $response = $request->isBrowser()
@@ -61,6 +62,13 @@ try {
         ))->handle($request);
     } elseif ($request->method === 'POST' && $request->path === '/delete') {
         $response = (new \Graffiti\Handlers\DeleteHandler($repo, $session, $owned))->handle($request);
+    } elseif ($request->method === 'POST' && $request->path === '/flag') {
+        $response = (new \Graffiti\Handlers\FlagHandler(
+            $repo,
+            $session,
+            $flagged,
+            $config['ip_hash_secret'],
+        ))->handle($request);
     } elseif (in_array($request->method, ['GET', 'POST'], true) && $request->path === '/admin') {
         $response = (new \Graffiti\Handlers\AdminHandler(
             $repo,
