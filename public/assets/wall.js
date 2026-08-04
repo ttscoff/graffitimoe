@@ -15,6 +15,10 @@
     .split(',')
     .map(function (s) { return parseInt(s, 10); })
     .filter(function (n) { return n > 0; });
+  var flaggedIds = (wall.getAttribute('data-flagged-ids') || '')
+    .split(',')
+    .map(function (s) { return parseInt(s, 10); })
+    .filter(function (n) { return n > 0; });
 
   var inFlight = false;
   var lastPollAt = 0;
@@ -67,6 +71,25 @@
     return ownedIds.indexOf(Number(id)) !== -1;
   }
 
+  function hasFlagged(id) {
+    return flaggedIds.indexOf(Number(id)) !== -1;
+  }
+
+  function flagActionsHtml(msg) {
+    if (!csrfToken) return '';
+    var id = escapeHtml(String(msg.id));
+    var mine = hasFlagged(msg.id);
+    return (
+      '<form class="wall-flag" method="post" action="/flag">' +
+      '<input type="hidden" name="csrf_token" value="' + escapeHtml(csrfToken) + '">' +
+      '<input type="hidden" name="id" value="' + id + '">' +
+      '<input type="hidden" name="next" value="/add">' +
+      '<button type="submit" class="wall-flag-btn' + (mine ? ' is-flagged-by-me' : '') +
+      '" title="' + (mine ? 'Remove your flag' : 'Flag this spray') + '">flag</button>' +
+      '</form>'
+    );
+  }
+
   function adminActionsHtml(msg) {
     if (!csrfToken || !canDelete(msg.id)) return '';
     var id = escapeHtml(String(msg.id));
@@ -109,6 +132,7 @@
       '<span class="terminal-dot terminal-dot-yellow"></span>' +
       '<span class="terminal-dot terminal-dot-green"></span>' +
       '<span class="terminal-title">msg #' + escapeHtml(String(msg.id)) + '</span>' +
+      flagActionsHtml(msg) +
       adminActionsHtml(msg) +
       '</div>' +
       '<pre class="terminal-body' + (outer ? ' ' + escapeHtml(outer) : '') + '">' +
@@ -207,4 +231,36 @@
   });
 
   setInterval(poll, POLL_MS);
+
+  grid.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || !form.classList || !form.classList.contains('wall-flag')) return;
+    e.preventDefault();
+    var btn = form.querySelector('.wall-flag-btn');
+    var id = parseInt(form.querySelector('input[name="id"]').value, 10);
+    var body = new URLSearchParams(new FormData(form));
+    fetch('/flag', {
+      method: 'POST',
+      headers: { Accept: 'text/plain' },
+      body: body,
+      credentials: 'same-origin',
+    }).then(function (res) {
+      if (!res.ok) throw new Error('flag failed');
+      return res.text();
+    }).then(function (text) {
+      var flagged = text.indexOf('Flagged') !== -1;
+      if (flagged) {
+        if (!hasFlagged(id)) flaggedIds.push(id);
+        if (btn) btn.classList.add('is-flagged-by-me');
+      } else {
+        flaggedIds = flaggedIds.filter(function (n) { return n !== id; });
+        if (btn) btn.classList.remove('is-flagged-by-me');
+      }
+      if (btn) {
+        btn.title = flagged ? 'Remove your flag' : 'Flag this spray';
+      }
+    }).catch(function () {
+      form.submit();
+    });
+  });
 })();
