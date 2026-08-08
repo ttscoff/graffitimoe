@@ -445,6 +445,50 @@ textarea:focus {
   letter-spacing: 0.04em;
 }
 
+a.terminal-title-link {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+a.terminal-title-link:hover,
+a.terminal-title-link:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.wall-sentinel {
+  height: 1px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.solo-page .hero-solo {
+  margin-bottom: 1.25rem;
+}
+
+.solo-page .brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.solo-page .brand-link:hover,
+.solo-page .brand-link:focus-visible {
+  text-decoration: underline;
+}
+
+.solo-wall {
+  margin-bottom: 1.5rem;
+}
+
+.solo-back {
+  margin: 0 0 2rem;
+  font-size: 0.95rem;
+}
+
+.solo-back a {
+  color: var(--accent, var(--text));
+}
+
 .wall-delete {
   margin: 0;
   margin-left: 0.35rem;

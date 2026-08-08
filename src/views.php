@@ -60,3 +60,16 @@ function render_admin_login(array $vars): string
     require __DIR__ . '/views/admin_login.php';
     return (string) ob_get_clean();
 }
+
+/**
+ * Render the light solo spray page at /id/{id}.
+ *
+ * @param array<string, mixed> $vars
+ */
+function render_id(array $vars): string
+{
+    ob_start();
+    extract($vars);
+    require __DIR__ . '/views/id.php';
+    return (string) ob_get_clean();
+}
