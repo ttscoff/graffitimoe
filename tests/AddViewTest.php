@@ -97,7 +97,28 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('data-id="9"', $html);
         $this->assertStringContainsString('wall-grid', $html);
         $this->assertStringContainsString('wall-empty', $html);
+        $this->assertStringContainsString('wall-sentinel', $html);
         $this->assertStringContainsString('/assets/wall.js', $html);
+    }
+
+    public function test_wall_titles_link_to_solo_pages(): void
+    {
+        $html = render_add([
+            'recent' => [[
+                'id' => 8,
+                'body' => 'hello wall!!',
+                'color' => 'red',
+                'bold' => false,
+                'created_at' => 'x',
+            ]],
+            'ok' => false,
+            'error' => null,
+            'colors' => \Graffiti\MessageSanitizer::COLORS,
+            'csrfToken' => 'tok',
+        ]);
+        $this->assertStringContainsString('href="/id/8"', $html);
+        $this->assertStringContainsString('msg #8', $html);
+        $this->assertStringContainsString('terminal-title-link', $html);
     }
 
     public function test_add_view_empty_still_has_grid_and_empty(): void
