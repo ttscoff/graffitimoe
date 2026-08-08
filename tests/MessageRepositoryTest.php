@@ -198,6 +198,21 @@ final class MessageRepositoryTest extends TestCase
         $this->assertNull($this->repo->find(0));
     }
 
+    public function test_recent_before_returns_older_ids_newest_first(): void
+    {
+        $a = $this->repo->create('aaaaaaaaaa', 'red', false, 'h');
+        $b = $this->repo->create('bbbbbbbbbb', 'cyan', false, 'h');
+        $c = $this->repo->create('cccccccccc', 'green', false, 'h');
+        $page = $this->repo->recent(10, $c);
+        $ids = array_map(static fn (array $m): int => $m['id'], $page);
+        $this->assertSame([$b, $a], $ids);
+
+        $page2 = $this->repo->recent(1, $c);
+        $this->assertSame([$b], array_map(static fn (array $m): int => $m['id'], $page2));
+
+        $this->assertSame([], $this->repo->recent(10, $a));
+    }
+
     public function test_toggle_community_flag_returns_null_for_missing_message(): void
     {
         $this->assertNull($this->repo->toggleCommunityFlag(999999, 'ip-a'));
