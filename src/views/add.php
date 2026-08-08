@@ -157,7 +157,7 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
             <span class="terminal-dot terminal-dot-red"></span>
             <span class="terminal-dot terminal-dot-yellow"></span>
             <span class="terminal-dot terminal-dot-green"></span>
-            <span class="terminal-title">msg #<?= e((string) $message['id']) ?></span>
+            <a class="terminal-title terminal-title-link" href="/id/<?= e((string) $message['id']) ?>">msg #<?= e((string) $message['id']) ?></a>
             <?php if ($csrfToken !== ''): ?>
               <form class="wall-flag" method="post" action="/flag">
                 <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
@@ -193,6 +193,7 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
         </div>
       <?php endforeach; ?>
     </div>
+    <div class="wall-sentinel" aria-hidden="true"></div>
   </section>
 
   <section class="site-section" id="house-rules">

@@ -73,10 +73,23 @@ final class MessageRepository
     }
 
     /** @return list<array{id:int,body:string,color:string,bold:bool,spans:list<array{t:string,c:string}>|null,flagged:bool,created_at:string}> */
-    public function recent(int $limit = 10): array
+    public function recent(int $limit = 10, ?int $beforeId = null): array
     {
+        if ($beforeId !== null && $beforeId > 0) {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, body, color, bold, spans, flagged, created_at FROM messages
+                 WHERE id < :before
+                 ORDER BY created_at DESC, id DESC LIMIT :limit'
+            );
+            $stmt->bindValue(':before', $beforeId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return array_map([$this, 'hydrate'], $stmt->fetchAll());
+        }
+
         $stmt = $this->pdo->prepare(
-            'SELECT id, body, color, bold, spans, flagged, created_at FROM messages ORDER BY created_at DESC, id DESC LIMIT :limit'
+            'SELECT id, body, color, bold, spans, flagged, created_at FROM messages
+             ORDER BY created_at DESC, id DESC LIMIT :limit'
         );
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
