@@ -127,6 +127,21 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
 
   <p class="compose-notice">No language filter. Posts are anonymous. Don&rsquo;t spray hate or porn &mdash; it gets wiped.</p>
 
+  <section class="site-section" id="house-rules">
+    <h2 class="wall-title">house rules</h2>
+    <p class="site-section-body">There&rsquo;s no automated language filtering. Contributions are anonymous. The developer takes no responsibility for what others write. Hate speech and pornographic content will be removed by the admin as quickly as possible.</p>
+  </section>
+
+  <section class="site-section" id="cli">
+    <h2 class="wall-title">from your terminal</h2>
+    <p class="site-section-body">Install the CLI with Homebrew:</p>
+    <pre class="cli-block"><code>brew tap ttscoff/thelab
+brew install graffiti</code></pre>
+    <p class="site-section-body">Then <code>graffiti</code> for a random spray, <code>graffiti get 42</code> for a specific id, or <code>graffiti spraypaint 'your message'</code> to post.</p>
+    <p class="site-section-body">Read with color: <code>graffiti --color=always</code> (or <code>never</code> / <code>auto</code>). Spray with palette options: <code>graffiti spraypaint --color cyan --bold 'your message'</code> &mdash; colors match the form (<code>default</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>).</p>
+    <p class="site-section-body">No Homebrew? <code>curl graffiti.moe</code> (or <code>curl 'graffiti.moe?color=always'</code> for color).</p>
+  </section>
+
   <section
     class="wall"
     data-wall-max="<?= $isAdmin ? '50' : '10' ?>"
@@ -196,22 +211,8 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
     <div class="wall-sentinel" aria-hidden="true"></div>
   </section>
 
-  <section class="site-section" id="house-rules">
-    <h2 class="wall-title">house rules</h2>
-    <p class="site-section-body">There&rsquo;s no automated language filtering. Contributions are anonymous. The developer takes no responsibility for what others write. Hate speech and pornographic content will be removed by the admin as quickly as possible.</p>
-  </section>
-
-  <section class="site-section" id="cli">
-    <h2 class="wall-title">from your terminal</h2>
-    <p class="site-section-body">Install the CLI with Homebrew:</p>
-    <pre class="cli-block"><code>brew tap ttscoff/thelab
-brew install graffiti</code></pre>
-    <p class="site-section-body">Then <code>graffiti</code> for a random spray, <code>graffiti get 42</code> for a specific id, or <code>graffiti spraypaint 'your message'</code> to post.</p>
-    <p class="site-section-body">Read with color: <code>graffiti --color=always</code> (or <code>never</code> / <code>auto</code>). Spray with palette options: <code>graffiti spraypaint --color cyan --bold 'your message'</code> &mdash; colors match the form (<code>default</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>).</p>
-    <p class="site-section-body">No Homebrew? <code>curl graffiti.moe</code> (or <code>curl 'graffiti.moe?color=always'</code> for color).</p>
-  </section>
-
 </div>
+<script src="<?= e(asset_url('/assets/paint-remap.js')) ?>" defer></script>
 <script src="<?= e(asset_url('/assets/compose.js')) ?>" defer></script>
 <script src="<?= e(asset_url('/assets/wall.js')) ?>" defer></script>
 </body>

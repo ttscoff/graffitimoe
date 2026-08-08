@@ -70,7 +70,8 @@ final class AddViewTest extends TestCase
 
         $houseRulesPos = strpos($html, 'id="house-rules"');
         $this->assertNotFalse($houseRulesPos);
-        $this->assertGreaterThan($recentSpraysPos, $houseRulesPos);
+        $this->assertLessThan($houseRulesPos, $composeNoticePos);
+        $this->assertLessThan($recentSpraysPos, $houseRulesPos);
 
         $this->assertStringContainsString('house rules', $html);
         $this->assertStringContainsString('no automated language filtering', $html);
@@ -144,7 +145,13 @@ final class AddViewTest extends TestCase
 
         $this->assertStringContainsString('id="char-count"', $html);
         $this->assertStringContainsString('aria-live="polite"', $html);
+        $this->assertStringContainsString('/assets/paint-remap.js', $html);
         $this->assertStringContainsString('/assets/compose.js', $html);
+        $paintRemapPos = strpos($html, '/assets/paint-remap.js');
+        $composePos = strpos($html, '/assets/compose.js');
+        $this->assertNotFalse($paintRemapPos);
+        $this->assertNotFalse($composePos);
+        $this->assertLessThan($composePos, $paintRemapPos);
         $this->assertStringNotContainsString('maxlength="1000"', $html);
     }
 
