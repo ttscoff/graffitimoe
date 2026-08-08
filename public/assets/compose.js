@@ -30,6 +30,8 @@
   var charBolds = [];
   /** @type {Array<{row:number,col:number,newline:boolean}>} */
   var layout = [];
+  /** @type {{text:string,colors:string[],bolds:boolean[]}|null} */
+  var paintSnapshot = null;
   var paintMode = false;
   var painting = false;
   /** @type {{colors:string[],bolds:boolean[]}|null} */
@@ -166,6 +168,36 @@
     });
   }
 
+  function savePaintSnapshot() {
+    if (!charColors.length) {
+      paintSnapshot = null;
+      return;
+    }
+    paintSnapshot = {
+      text: body.value,
+      colors: charColors.slice(),
+      bolds: charBolds.slice(),
+    };
+  }
+
+  function applyRemapOrInit() {
+    var remapApi = globalThis.GraffitiPaintRemap;
+    if (paintSnapshot && remapApi && typeof remapApi.remapStyles === 'function') {
+      var remapped = remapApi.remapStyles(
+        paintSnapshot.text,
+        paintSnapshot.colors,
+        paintSnapshot.bolds,
+        body.value,
+        selectedColor(),
+        brushBold()
+      );
+      charColors = remapped.colors;
+      charBolds = remapped.bolds;
+      return;
+    }
+    initCharStylesFromBody();
+  }
+
   function setComposeSurface(paintOn) {
     if (paintOn) {
       body.setAttribute('hidden', '');
@@ -192,7 +224,7 @@
     paintMode = true;
     paintToggle.setAttribute('aria-pressed', 'true');
     paintToggle.classList.add('is-active');
-    initCharStylesFromBody();
+    applyRemapOrInit();
     setComposeSurface(true);
     renderPaintSurface();
     if (brushPalette) brushPalette.hidden = false;
@@ -203,9 +235,11 @@
     if (sprayPaint) sprayPaint.hidden = false;
     syncBoldLabel();
     syncSpansField();
+    savePaintSnapshot();
   }
 
   function exitPaintMode() {
+    savePaintSnapshot();
     paintMode = false;
     painting = false;
     strokeSnapshot = null;
