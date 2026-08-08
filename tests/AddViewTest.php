@@ -80,6 +80,7 @@ final class AddViewTest extends TestCase
         $this->assertStringContainsString('brew tap ttscoff/thelab', $html);
         $this->assertStringContainsString('brew install graffiti', $html);
         $this->assertStringContainsString("graffiti spraypaint 'your message'", $html);
+        $this->assertStringContainsString('graffiti get 42', $html);
         $this->assertStringContainsString('curl graffiti.moe', $html);
         $this->assertStringContainsString('color=always', $html);
         $this->assertStringNotContainsString('Want color?', $html);

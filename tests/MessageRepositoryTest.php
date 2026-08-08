@@ -185,6 +185,19 @@ final class MessageRepositoryTest extends TestCase
         $this->assertFalse($this->repo->exists($id + 999));
     }
 
+    public function test_find_returns_hydrated_row_or_null(): void
+    {
+        $id = $this->repo->create('hello painted world!!', 'cyan', true, 'poster');
+        $row = $this->repo->find($id);
+        $this->assertNotNull($row);
+        $this->assertSame($id, $row['id']);
+        $this->assertSame('hello painted world!!', $row['body']);
+        $this->assertSame('cyan', $row['color']);
+        $this->assertTrue($row['bold']);
+        $this->assertNull($this->repo->find($id + 999));
+        $this->assertNull($this->repo->find(0));
+    }
+
     public function test_toggle_community_flag_returns_null_for_missing_message(): void
     {
         $this->assertNull($this->repo->toggleCommunityFlag(999999, 'ip-a'));

@@ -6,12 +6,13 @@ cli="$root/cli/graffiti"
 plain="$("$cli" --color=never --version)"
 [[ "$plain" == *$'\n'* ]] || { echo "expected multiline version with logo"; exit 1; }
 [[ "$plain" == *"@@@@@@@"* ]] || { echo "missing can body in logo"; exit 1; }
-[[ "$plain" == *"graffiti 0.1.2"* ]] || { echo "missing version line"; exit 1; }
+[[ "$plain" == *"graffiti 0.1.5"* ]] || { echo "missing version line"; exit 1; }
 [[ "$plain" != *$'\033'* ]] || { echo "plain version should have no ANSI"; exit 1; }
 
 help_plain="$("$cli" --color=never --help)"
 [[ "$help_plain" == *"@@@@@@@"* ]] || { echo "missing logo on help"; exit 1; }
 [[ "$help_plain" == *"Usage:"* ]] || { echo "missing usage"; exit 1; }
+[[ "$help_plain" == *"graffiti get ID"* ]] || { echo "missing get usage"; exit 1; }
 
 spray_help="$("$cli" spraypaint --help)"
 [[ "$spray_help" != *"@@@@@@@"* ]] || { echo "spraypaint help should not show logo"; exit 1; }

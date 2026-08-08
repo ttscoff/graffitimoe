@@ -58,6 +58,20 @@ final class MessageRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
+    /** @return array{id:int,body:string,color:string,bold:bool,spans:list<array{t:string,c:string}>|null,flagged:bool,created_at:string}|null */
+    public function find(int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        $stmt = $this->pdo->prepare(
+            'SELECT id, body, color, bold, spans, flagged, created_at FROM messages WHERE id = :id'
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row === false ? null : $this->hydrate($row);
+    }
+
     /** @return list<array{id:int,body:string,color:string,bold:bool,spans:list<array{t:string,c:string}>|null,flagged:bool,created_at:string}> */
     public function recent(int $limit = 10): array
     {

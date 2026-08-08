@@ -13,12 +13,14 @@ Fetch a random message (CLI-like requests to `/` behave the same as `/random`):
 ```bash
 curl https://graffiti.moe
 curl https://graffiti.moe/random
+curl https://graffiti.moe/id/42
 ```
 
 Add terminal color (server-controlled palette only; see [Security](#security)):
 
 ```bash
 curl 'https://graffiti.moe/random?color=always'
+curl 'https://graffiti.moe/id/42?color=always'
 ```
 
 Post a message (plain-text response):
@@ -41,6 +43,7 @@ The repo includes a bash wrapper around `curl`:
 ./cli/graffiti              # random message (color when stdout is a TTY)
 ./cli/graffiti --color=never
 ./cli/graffiti --color=always
+./cli/graffiti get 42       # one spray by id
 ./cli/graffiti spraypaint   # open /add in your default browser
 ./cli/graffiti spraypaint --color magenta --bold 'hello world'
 echo 'ascii art' | ./cli/graffiti spraypaint
@@ -108,7 +111,7 @@ You can also send `X-Admin-Password: YOUR_ADMIN_PASSWORD` instead of Bearer.
 
 graffiti.moe is designed for safe terminal output:
 
-- **No raw ANSI from users.** Submitters pick a palette key (`default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`); the server emits escape codes only when `?color=always` is set on `/` or `/random`.
+- **No raw ANSI from users.** Submitters pick a palette key (`default`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`); the server emits escape codes only when `?color=always` is set on `/`, `/random`, or `/id/{id}`.
 - **Control-character stripping.** Bodies are sanitized on write: ESC and other control bytes are removed (newlines preserved); 10–1000 characters after trim.
 - **Rate limiting.** POST `/add` is limited per hashed IP (see config).
 - **Honeypot.** The HTML form includes a hidden `website` field; bots that fill it are rejected quietly.

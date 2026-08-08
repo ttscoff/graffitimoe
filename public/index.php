@@ -56,6 +56,8 @@ try {
             : (new \Graffiti\Handlers\RandomHandler($repo, $config['base_url']))->handle($request);
     } elseif ($request->method === 'GET' && $request->path === '/random') {
         $response = (new \Graffiti\Handlers\RandomHandler($repo, $config['base_url']))->handle($request);
+    } elseif ($request->method === 'GET' && preg_match('#^/id/(\d+)$#', $request->path, $idMatch) === 1) {
+        $response = (new \Graffiti\Handlers\IdHandler($repo))->handle($request, (int) $idMatch[1]);
     } elseif (in_array($request->method, ['GET', 'POST'], true) && $request->path === '/add') {
         $response = (new \Graffiti\Handlers\AddHandler(
             $repo,

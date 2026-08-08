@@ -205,7 +205,7 @@ $flaggedLookup = array_fill_keys($flaggedIds, true);
     <p class="site-section-body">Install the CLI with Homebrew:</p>
     <pre class="cli-block"><code>brew tap ttscoff/thelab
 brew install graffiti</code></pre>
-    <p class="site-section-body">Then <code>graffiti</code> for a random spray, or <code>graffiti spraypaint 'your message'</code> to post.</p>
+    <p class="site-section-body">Then <code>graffiti</code> for a random spray, <code>graffiti get 42</code> for a specific id, or <code>graffiti spraypaint 'your message'</code> to post.</p>
     <p class="site-section-body">Read with color: <code>graffiti --color=always</code> (or <code>never</code> / <code>auto</code>). Spray with palette options: <code>graffiti spraypaint --color cyan --bold 'your message'</code> &mdash; colors match the form (<code>default</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>).</p>
     <p class="site-section-body">No Homebrew? <code>curl graffiti.moe</code> (or <code>curl 'graffiti.moe?color=always'</code> for color).</p>
   </section>

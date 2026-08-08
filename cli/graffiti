@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="0.1.4"
+VERSION="0.1.5"
 BASE="${GRAFFITI_URL:-https://graffiti.moe}"
 BASE="${BASE%/}"
 COLOR_MODE="${GRAFFITI_COLOR:-auto}"
@@ -60,6 +60,7 @@ usage() {
     cat <<'EOF'
 Usage:
   graffiti [--color=always|never|auto]     Print a random graffiti message
+  graffiti get ID                          Print spray with numeric id
   graffiti spraypaint [--color NAME] [--bold] [MESSAGE]
   graffiti spraypaint [--color NAME] [--bold] < file.txt
   graffiti spraypaint                      Open /add in your browser (no args)
@@ -110,6 +111,19 @@ open_url() {
 
 cmd_random() {
     local url="$BASE/random"
+    if want_color; then
+        url+="?color=always"
+    fi
+    curl -fsS "$url"
+}
+
+cmd_get() {
+    local id="$1"
+    if [[ ! "$id" =~ ^[0-9]+$ ]]; then
+        echo "get requires a numeric id." >&2
+        exit 2
+    fi
+    local url="$BASE/id/${id}"
     if want_color; then
         url+="?color=always"
     fi
@@ -222,6 +236,14 @@ done
 case "${1:-}" in
     "")
         cmd_random
+        ;;
+    get)
+        shift
+        if [[ $# -ne 1 ]]; then
+            echo "Usage: graffiti get ID" >&2
+            exit 2
+        fi
+        cmd_get "$1"
         ;;
     spraypaint)
         shift
