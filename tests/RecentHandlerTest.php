@@ -105,4 +105,69 @@ final class RecentHandlerTest extends TestCase
 
         @unlink($path);
     }
+
+    public function test_recent_before_returns_older_page(): void
+    {
+        $path = sys_get_temp_dir() . '/graffiti_recent_' . uniqid('', true) . '.sqlite';
+        $repo = new MessageRepository(Database::connect($path));
+        $a = $repo->create(str_repeat('a', 10), 'red', false, 'h');
+        $b = $repo->create(str_repeat('b', 10), 'cyan', false, 'h');
+        $c = $repo->create(str_repeat('c', 10), 'green', false, 'h');
+        $handler = new RecentHandler($repo, new ArraySession());
+        $res = $handler->handle(new Request(
+            'GET',
+            '/recent',
+            ['before' => (string) $c, 'limit' => '10'],
+            ['HTTP_ACCEPT' => 'application/json'],
+            '',
+            [],
+            '1.1.1.1',
+        ));
+        $this->assertSame(200, $res->status);
+        $data = json_decode($res->body, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame([$b, $a], array_column($data, 'id'));
+        @unlink($path);
+    }
+
+    public function test_recent_invalid_before_ignored(): void
+    {
+        $path = sys_get_temp_dir() . '/graffiti_recent_' . uniqid('', true) . '.sqlite';
+        $repo = new MessageRepository(Database::connect($path));
+        $repo->create(str_repeat('a', 10), 'red', false, 'h');
+        $handler = new RecentHandler($repo, new ArraySession());
+        $res = $handler->handle(new Request(
+            'GET',
+            '/recent',
+            ['before' => 'nope'],
+            ['HTTP_ACCEPT' => 'application/json'],
+            '',
+            [],
+            '1.1.1.1',
+        ));
+        $data = json_decode($res->body, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertCount(1, $data);
+        @unlink($path);
+    }
+
+    public function test_recent_limit_capped_at_50(): void
+    {
+        $path = sys_get_temp_dir() . '/graffiti_recent_' . uniqid('', true) . '.sqlite';
+        $repo = new MessageRepository(Database::connect($path));
+        for ($i = 0; $i < 55; $i++) {
+            $repo->create(str_repeat('x', 10) . $i, 'red', false, 'h');
+        }
+        $handler = new RecentHandler($repo, new ArraySession());
+        $res = $handler->handle(new Request(
+            'GET',
+            '/recent',
+            ['limit' => '999'],
+            ['HTTP_ACCEPT' => 'application/json'],
+            '',
+            [],
+            '1.1.1.1',
+        ));
+        $data = json_decode($res->body, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertCount(50, $data);
+        @unlink($path);
+    }
 }

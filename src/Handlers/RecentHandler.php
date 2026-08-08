@@ -19,10 +19,27 @@ final class RecentHandler
 
     public function handle(Request $request): Response
     {
-        $limit = $this->session->isAdmin()
-            ? AddHandler::ADMIN_RECENT_LIMIT
-            : AddHandler::PUBLIC_RECENT_LIMIT;
+        $beforeRaw = $request->query['before'] ?? null;
+        $beforeId = null;
+        if ($beforeRaw !== null && $beforeRaw !== '' && ctype_digit((string) $beforeRaw)) {
+            $n = (int) $beforeRaw;
+            if ($n > 0) {
+                $beforeId = $n;
+            }
+        }
 
-        return Response::json($this->repo->recent($limit));
+        $defaultLimit = $beforeId !== null
+            ? AddHandler::PUBLIC_RECENT_LIMIT
+            : ($this->session->isAdmin()
+                ? AddHandler::ADMIN_RECENT_LIMIT
+                : AddHandler::PUBLIC_RECENT_LIMIT);
+
+        $limit = $defaultLimit;
+        if (isset($request->query['limit']) && ctype_digit((string) $request->query['limit'])) {
+            $limit = (int) $request->query['limit'];
+        }
+        $limit = max(1, min(50, $limit));
+
+        return Response::json($this->repo->recent($limit, $beforeId));
     }
 }
