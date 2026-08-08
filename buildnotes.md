@@ -84,6 +84,12 @@ CLI logo smoke (help/version output, no server required).
 
 @run(./tests/cli_logo.sh)
 
+## Test Paint Remap
+
+Paint style LCS remap smoke (Node, no server required).
+
+@run(node tests/paint_remap_smoke.js)
+
 ## Test All
 
 Run PHPUnit, then all smoke scripts.
@@ -92,6 +98,7 @@ Run PHPUnit, then all smoke scripts.
 @include(Test Smoke)
 @include(Test CLI Smoke)
 @include(Test CLI Logo)
+@include(Test Paint Remap)
 
 ## Deploy Rsync
 

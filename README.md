@@ -85,6 +85,7 @@ Smoke tests (start nothing yourself; scripts spin up a temporary server):
 ./scripts/smoke.sh
 ./tests/cli_smoke.sh
 ./tests/cli_logo.sh
+node tests/paint_remap_smoke.js
 ./vendor/bin/phpunit
 ```
 

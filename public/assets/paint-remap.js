@@ -46,6 +46,10 @@
       }
     }
 
+    if (dp[n][m] < Math.ceil(Math.max(n, m) / 2)) {
+      return { colors: colors, bolds: bolds };
+    }
+
     // Backtrack: copy styles for matches
     i = n;
     j = m;

@@ -181,7 +181,8 @@
   }
 
   function applyRemapOrInit() {
-    var remapApi = globalThis.GraffitiPaintRemap;
+    var root = typeof globalThis !== 'undefined' ? globalThis : this;
+    var remapApi = root.GraffitiPaintRemap;
     if (paintSnapshot && remapApi && typeof remapApi.remapStyles === 'function') {
       var remapped = remapApi.remapStyles(
         paintSnapshot.text,
@@ -310,8 +311,11 @@
 
   body.addEventListener('input', function () {
     if (paintMode) {
-      // Text edited while somehow still in paint mode — clear paints
+      // Text edited while somehow still in paint mode — exitPaintMode saves snapshot
       exitPaintMode();
+    }
+    if (!body.value) {
+      paintSnapshot = null;
     }
     spansInput.value = '';
     updateCount();

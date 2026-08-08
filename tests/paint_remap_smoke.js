@@ -66,4 +66,32 @@ var r4 = remap(
 );
 assert(r4.colors.join(',') === 'red,red,blue', 'append');
 
+// Dissimilar rewrite: bail out of speckled LCS, use all-insert styles
+var oldDissimilar = 'hello world';
+var r5 = remap(
+  oldDissimilar,
+  oldDissimilar.split('').map(function () {
+    return 'red';
+  }),
+  oldDissimilar.split('').map(function () {
+    return false;
+  }),
+  'goodbye friend',
+  'magenta',
+  false
+);
+assert(r5.colors.length === 'goodbye friend'.length, 'dissimilar length');
+assert(
+  r5.colors.every(function (c) {
+    return c === 'magenta';
+  }),
+  'dissimilar all insert color'
+);
+assert(
+  r5.colors.filter(function (c) {
+    return c === 'red';
+  }).length === 0,
+  'dissimilar no speckle'
+);
+
 console.log('paint remap smoke test passed.');
